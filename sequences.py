@@ -66,12 +66,12 @@ def drag_rabi(sequencer):
     freq_lambda = (freq_ge - alpha) / freq_ge
     optimal_beta = freq_lambda ** 2 / (4 * alpha)
 
-    for rabi_len in range(0, 10, 1):
+    for rabi_len in range(0, 10, 2):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         DRAG(A=0.5, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=3.9, phase=0,
+                         DRAG(A=0.3, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=3.9, phase=0,
                               plot=False))
         readout(sequencer)
 
@@ -88,4 +88,4 @@ if __name__ == "__main__":
 
     multiple_sequences = drag_rabi(sequencer)
 
-    run_qutip_experiment(multiple_sequences)
+    data, measured_data = run_qutip_experiment(multiple_sequences)
