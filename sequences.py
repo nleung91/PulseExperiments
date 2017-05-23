@@ -80,7 +80,62 @@ def drag_rabi(sequencer):
     return sequencer.complete(plot=True)
 
 
-if __name__ == "__main__":
+def drag_optimization(sequencer, params, deltas):
+    # drag_rabi sequences
+
+    # using current params
+    params_now = params.copy()
+
+    sequencer.new_sequence()
+
+    sequencer.append('m8195a_trig', Ones(time=100))
+    sequencer.append('charge1',
+                     DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['len'],
+                          cutoff_sigma=2,
+                          freq=3.9, phase=0,
+                          plot=False))
+    readout(sequencer)
+
+    sequencer.end_sequence()
+
+    # start perturbation on each params
+    for key in params.keys():
+        params_now = params.copy()
+
+        # + perturb
+        params_now[key] = params[key] + deltas[key]
+
+        sequencer.new_sequence()
+
+        sequencer.append('m8195a_trig', Ones(time=100))
+        sequencer.append('charge1',
+                         DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['len'],
+                              cutoff_sigma=2,
+                              freq=3.9, phase=0,
+                              plot=False))
+        readout(sequencer)
+
+        sequencer.end_sequence()
+
+        # - perturb
+        params_now[key] = params[key] - deltas[key]
+
+        sequencer.new_sequence()
+
+        sequencer.append('m8195a_trig', Ones(time=100))
+        sequencer.append('charge1',
+                         DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['len'],
+                              cutoff_sigma=2,
+                              freq=3.9, phase=0,
+                              plot=False))
+        readout(sequencer)
+
+        sequencer.end_sequence()
+
+    return sequencer.complete(plot=True)
+
+
+def run_single_experiment():
     vis = visdom.Visdom()
     vis.close()
 
@@ -89,3 +144,52 @@ if __name__ == "__main__":
     multiple_sequences = drag_rabi(sequencer)
 
     data, measured_data = run_qutip_experiment(multiple_sequences)
+
+
+def optimize_drag():
+    vis = visdom.Visdom()
+    vis.close()
+
+    optimization_loop = 1000
+
+    freq_ge = 3.9  # GHz
+    alpha = 0.2  # GHz
+
+    freq_lambda = (freq_ge - alpha) / freq_ge
+    optimal_beta = freq_lambda ** 2 / (4 * alpha)
+
+    params_init = {'A': 0.3, 'beta': optimal_beta, 'len': 6}
+    deltas = {'A': 0.001, 'beta': 0.01 * optimal_beta, 'len': 0.01}
+
+    params = params_init
+
+    update_step = 0.01
+
+    for ii in range(optimization_loop):
+        sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
+
+        print("params: %s" % params)
+
+        multiple_sequences = drag_optimization(sequencer, params, deltas)
+
+        data, measured_data = run_qutip_experiment(multiple_sequences)
+
+        Pe_list = measured_data[:, 1]
+
+        grad_list = Pe_list[1::2] - Pe_list[2::2]
+
+        grads = {}
+        grads['A'] = grad_list[0] / (2 * deltas['A'])
+        grads['beta'] = grad_list[1] / (2 * deltas['beta'])
+        grads['len'] = grad_list[2] / (2 * deltas['len'])
+
+        print("gradients: %s" % grads)
+
+        params['A'] = params['A'] + update_step * grads['A']
+        params['beta'] = params['beta'] + update_step * grads['beta']
+        params['len'] = params['len'] + update_step * grads['len']
+
+
+if __name__ == "__main__":
+    # run_single_experiment()
+    optimize_drag()
