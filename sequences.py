@@ -84,61 +84,6 @@ def drag_rabi(sequencer):
     return sequencer.complete(plot=True)
 
 
-def drag_optimization(sequencer, params, deltas, plot=True):
-    # drag_rabi sequences
-
-    # using current params
-    params_now = params.copy()
-
-    sequencer.new_sequence()
-
-    sequencer.append('m8195a_trig', Ones(time=100))
-    sequencer.append('charge1',
-                     DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['sigma_len'],
-                          cutoff_sigma=2,
-                          freq=4.5, phase=0,
-                          plot=False))
-    readout(sequencer)
-
-    sequencer.end_sequence()
-
-    # start perturbation on each params
-    for key in params.keys():
-        params_now = params.copy()
-
-        # + perturb
-        params_now[key] = params[key] + deltas[key]
-
-        sequencer.new_sequence()
-
-        sequencer.append('m8195a_trig', Ones(time=100))
-        sequencer.append('charge1',
-                         DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['sigma_len'],
-                              cutoff_sigma=2,
-                              freq=4.5, phase=0,
-                              plot=False))
-        readout(sequencer)
-
-        sequencer.end_sequence()
-
-        # - perturb
-        params_now[key] = params[key] - deltas[key]
-
-        sequencer.new_sequence()
-
-        sequencer.append('m8195a_trig', Ones(time=100))
-        sequencer.append('charge1',
-                         DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['sigma_len'],
-                              cutoff_sigma=2,
-                              freq=4.5, phase=0,
-                              plot=False))
-        readout(sequencer)
-
-        sequencer.end_sequence()
-
-    return sequencer.complete(plot=plot)
-
-
 def drag_optimization_neldermead(sequencer, params, plot=True):
     # drag_rabi sequences
 
@@ -172,50 +117,6 @@ def run_single_experiment():
     multiple_sequences = drag_rabi(sequencer)
 
     data, measured_data = run_qutip_experiment(multiple_sequences)
-
-
-def optimize_drag():
-    vis = visdom.Visdom()
-    vis.close()
-
-    optimization_loop = 1000
-
-    freq_ge = 4.5  # GHz
-    alpha = 0.125  # GHz
-
-    freq_lambda = (freq_ge - alpha) / freq_ge
-    optimal_beta = freq_lambda ** 2 / (4 * alpha)
-
-    params_init = {'A': 0.16015153996149053, 'beta': 1.0743441859336595, 'sigma_len': 10.004606863527842}
-    deltas = {'A': 0.001, 'beta': 0.01 * optimal_beta, 'sigma_len': 0.01}
-
-    params = params_init
-
-    update_step = 0.001
-
-    for ii in range(optimization_loop):
-        sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
-
-        print("optimization loop: %d" % ii)
-        print("params: %s" % params)
-
-        multiple_sequences = drag_optimization(sequencer, params, deltas, plot=True)
-
-        data, measured_data = run_qutip_experiment(multiple_sequences, plot=True)
-
-        Pe_list = measured_data[:, 1]
-
-        grad_list = Pe_list[1::2] - Pe_list[2::2]
-
-        grads = {}
-
-        # update params according to grads
-        for key_id, key in enumerate(params.keys()):
-            grads[key] = grad_list[key_id] / (2 * deltas[key])
-            params[key] = params[key] + update_step * grads[key]
-
-        print("Current value: %s" % Pe_list[0])
-        print("gradients: %s" % grads)
 
 
 def optimize_drag_neldermead():
