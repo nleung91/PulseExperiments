@@ -49,7 +49,7 @@ def rabi(sequencer):
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=3.9, phase=0, plot=False))
+                         Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
         readout(sequencer)
 
         sequencer.end_sequence()
@@ -60,8 +60,8 @@ def rabi(sequencer):
 def drag_rabi(sequencer):
     # drag_rabi sequences
 
-    freq_ge = 3.9  # GHz
-    alpha = 0.2  # GHz
+    freq_ge = 4.5  # GHz
+    alpha = 0.125  # GHz
 
     freq_lambda = (freq_ge - alpha) / freq_ge
     optimal_beta = freq_lambda ** 2 / (4 * alpha)
@@ -71,7 +71,7 @@ def drag_rabi(sequencer):
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         DRAG(A=0.3, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=3.9, phase=0,
+                         DRAG(A=0.3, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0,
                               plot=False))
         readout(sequencer)
 
@@ -80,7 +80,7 @@ def drag_rabi(sequencer):
     return sequencer.complete(plot=True)
 
 
-def drag_optimization(sequencer, params, deltas):
+def drag_optimization(sequencer, params, deltas, plot=True):
     # drag_rabi sequences
 
     # using current params
@@ -92,7 +92,7 @@ def drag_optimization(sequencer, params, deltas):
     sequencer.append('charge1',
                      DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['len'],
                           cutoff_sigma=2,
-                          freq=3.9, phase=0,
+                          freq=4.5, phase=0,
                           plot=False))
     readout(sequencer)
 
@@ -111,7 +111,7 @@ def drag_optimization(sequencer, params, deltas):
         sequencer.append('charge1',
                          DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['len'],
                               cutoff_sigma=2,
-                              freq=3.9, phase=0,
+                              freq=4.5, phase=0,
                               plot=False))
         readout(sequencer)
 
@@ -126,13 +126,13 @@ def drag_optimization(sequencer, params, deltas):
         sequencer.append('charge1',
                          DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['len'],
                               cutoff_sigma=2,
-                              freq=3.9, phase=0,
+                              freq=4.5, phase=0,
                               plot=False))
         readout(sequencer)
 
         sequencer.end_sequence()
 
-    return sequencer.complete(plot=True)
+    return sequencer.complete(plot=plot)
 
 
 def run_single_experiment():
@@ -152,43 +152,42 @@ def optimize_drag():
 
     optimization_loop = 1000
 
-    freq_ge = 3.9  # GHz
-    alpha = 0.2  # GHz
+    freq_ge = 4.5  # GHz
+    alpha = 0.125  # GHz
 
     freq_lambda = (freq_ge - alpha) / freq_ge
     optimal_beta = freq_lambda ** 2 / (4 * alpha)
 
-    params_init = {'A': 0.3, 'beta': optimal_beta, 'len': 6}
+    params_init = {'A': 0.15783731458276481, 'beta': 1.0800126087206616, 'len': 10.0040591952967297}
     deltas = {'A': 0.001, 'beta': 0.01 * optimal_beta, 'len': 0.01}
 
     params = params_init
 
-    update_step = 0.01
+    update_step = 0.001
 
     for ii in range(optimization_loop):
         sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
+        print("optimization loop: %d" % ii)
         print("params: %s" % params)
 
-        multiple_sequences = drag_optimization(sequencer, params, deltas)
+        multiple_sequences = drag_optimization(sequencer, params, deltas, plot=False)
 
-        data, measured_data = run_qutip_experiment(multiple_sequences)
+        data, measured_data = run_qutip_experiment(multiple_sequences, plot=False)
 
         Pe_list = measured_data[:, 1]
 
         grad_list = Pe_list[1::2] - Pe_list[2::2]
 
         grads = {}
-        grads['A'] = grad_list[0] / (2 * deltas['A'])
-        grads['beta'] = grad_list[1] / (2 * deltas['beta'])
-        grads['len'] = grad_list[2] / (2 * deltas['len'])
 
+        # update params according to grads
+        for key_id, key in enumerate(params.keys()):
+            grads[key] = grad_list[key_id] / (2 * deltas[key])
+            params[key] = params[key] + update_step * grads[key]
+
+        print("Current value: %s" %Pe_list[0])
         print("gradients: %s" % grads)
-
-        params['A'] = params['A'] + update_step * grads['A']
-        params['beta'] = params['beta'] + update_step * grads['beta']
-        params['len'] = params['len'] + update_step * grads['len']
-
 
 if __name__ == "__main__":
     # run_single_experiment()
