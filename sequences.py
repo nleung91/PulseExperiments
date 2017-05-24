@@ -50,7 +50,7 @@ def rabi(sequencer):
 
     readout_time_list = []
 
-    for rabi_len in range(0, 10, 1):
+    for rabi_len in np.arange(0, 10, 0.5):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
@@ -69,7 +69,7 @@ def t1(sequencer):
 
     readout_time_list = []
 
-    for idle_len in range(0, 100, 20):
+    for idle_len in np.arange(0, 100, 20):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
@@ -94,7 +94,7 @@ def drag_rabi(sequencer):
     freq_lambda = (freq_ge + alpha) / freq_ge
     optimal_beta = freq_lambda ** 2 / (4 * alpha)
 
-    for rabi_len in range(0, 10, 2):
+    for rabi_len in np.arange(0, 10, 2):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
@@ -139,7 +139,7 @@ def run_single_experiment():
 
     sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
-    multiple_sequences, readout_time_list = t1(sequencer)
+    multiple_sequences, readout_time_list = rabi(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
     data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'])
