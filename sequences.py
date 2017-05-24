@@ -48,21 +48,45 @@ def readout(sequencer):
 def rabi(sequencer):
     # rabi sequences
 
+    readout_time_list = []
+
     for rabi_len in range(0, 10, 1):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
                          Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
-        readout(sequencer)
+        readout_time = readout(sequencer)
+        readout_time_list.append(readout_time)
 
         sequencer.end_sequence()
 
-    return sequencer.complete(plot=True)
+    return sequencer.complete(plot=True), np.array(readout_time_list)
+
+
+def t1(sequencer):
+    # t1 sequences
+
+    readout_time_list = []
+
+    for idle_len in range(0, 100, 20):
+        sequencer.new_sequence()
+
+        sequencer.append('m8195a_trig', Ones(time=100))
+        sequencer.append('charge1',
+                         Gauss(max_amp=0.5, sigma_len=7, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
+        sequencer.append('charge1', Idle(time=idle_len))
+        readout_time = readout(sequencer)
+        readout_time_list.append(readout_time)
+
+        sequencer.end_sequence()
+
+    return sequencer.complete(plot=True), np.array(readout_time_list)
 
 
 def drag_rabi(sequencer):
     # drag_rabi sequences
+    readout_time_list = []
 
     freq_ge = 4.5  # GHz
     alpha = - 0.125  # GHz
@@ -77,11 +101,12 @@ def drag_rabi(sequencer):
         sequencer.append('charge1',
                          DRAG(A=0.3, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0,
                               plot=False))
-        readout(sequencer)
+        readout_time = readout(sequencer)
+        readout_time_list.append(readout_time)
 
         sequencer.end_sequence()
 
-    return sequencer.complete(plot=True)
+    return sequencer.complete(plot=True), np.array(readout_time_list)
 
 
 def drag_optimization_neldermead(sequencer, params, plot=True):
@@ -114,9 +139,15 @@ def run_single_experiment():
 
     sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
-    multiple_sequences = drag_rabi(sequencer)
+    multiple_sequences, readout_time_list = t1(sequencer)
 
-    data, measured_data = run_qutip_experiment(multiple_sequences)
+    awg_readout_time_list = get_awg_readout_time(readout_time_list)
+    data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'])
+
+    win = vis.line(
+                X=np.arange(0, len(measured_data)),
+                Y=measured_data,
+                opts=dict(title='experiment data'))
 
 
 def optimize_drag_neldermead():
@@ -170,5 +201,5 @@ def get_awg_readout_time(readout_time_list):
 
 
 if __name__ == "__main__":
-    # run_single_experiment()
-    optimize_drag_neldermead()
+    run_single_experiment()
+    # optimize_drag_neldermead()
