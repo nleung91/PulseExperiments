@@ -1,5 +1,5 @@
 from sequencer import Sequencer
-from pulse_classes import Gauss, Idle, Ones, Square, DRAG
+from pulse_classes import Gauss, Idle, Ones, Square, DRAG, ARB
 from qutip_experiment import run_qutip_experiment
 
 import numpy as np
@@ -75,6 +75,29 @@ def drag_optimization_neldermead(sequencer, params, plot=True):
     return sequencer.complete(plot=plot), np.array(readout_time_list)
 
 
+def arb_optimization_neldermead(sequencer, params, plot=True):
+    # drag_rabi sequences
+
+    readout_time_list = []
+
+    # using current params
+    params_now = params.copy()
+
+    sequencer.new_sequence()
+
+    sequencer.append('m8195a_trig', Ones(time=100))
+    sequencer.append('charge1',
+                     ARB(A_list=params_now['A_list'], B_list=params_now['B_list'], len=params_now['len'],
+                         freq=params_now['freq'], phase=0,
+                         plot=False))
+    readout_time = readout(sequencer)
+    readout_time_list.append(readout_time)
+
+    sequencer.end_sequence()
+
+    return sequencer.complete(plot=plot), np.array(readout_time_list)
+
+
 def sideband_optimization_neldermead(sequencer, params, plot=True):
     # drag_rabi sequences
 
@@ -103,6 +126,68 @@ def sideband_optimization_neldermead(sequencer, params, plot=True):
     sequencer.end_sequence()
 
     return sequencer.complete(plot=plot), np.array(readout_time_list)
+
+
+def optimize_arb_neldermead():
+    vis = visdom.Visdom()
+    vis.close()
+
+    import scipy
+
+
+    freq_ge = 4.5  # GHz
+    alpha = - 0.125  # GHz
+
+    freq_lambda = (freq_ge + alpha) / freq_ge
+    optimal_beta = freq_lambda ** 2 / (4 * alpha)
+
+    # params_init = {'A': 0.4, 'beta': optimal_beta, 'sigma_len': 4.0}
+    params_init = {'A_list': [0, 0.1, 0.2, 0.1, 0], 'B_list': [0, 0.1, 0.2, 0.1, 0], 'len': 3.5783897050108426,
+                   'freq': 4.5}
+
+    params_values_init_list = []
+    # for params_key in params_init.keys():
+    # if 'list' in params_key:
+    #         pass
+
+    for params_key in params_init.keys():
+        if 'list' in params_key:
+            params_values_init_list.extend(params_init[params_key])
+        else:
+            params_values_init_list.append(params_init[params_key])
+
+    params_values_init = np.array(params_values_init_list)
+    print(params_values_init)
+
+    def opt_fun(params_values):
+        sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
+
+        params = {}
+
+        list_index_acc = 0
+        for ii, params_key in enumerate(params_init.keys()):
+            index = list_index_acc + ii
+            if 'list' in params_key:
+                params[params_key] = params_values[index:index+len(params_init[params_key])]
+                list_index_acc += len(params_init[params_key]) - 1
+            else:
+                params[params_key] = params_values[index]
+
+        print("params: %s" % params)
+
+        multiple_sequences, readout_time_list = arb_optimization_neldermead(sequencer, params, plot=False)
+
+        awg_readout_time_list = get_awg_readout_time(readout_time_list)
+
+        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
+
+        Pe_list = measured_data[:, 1]
+
+        print("Current value: %s" % Pe_list[0])
+
+        return (1 - Pe_list[0])
+
+    scipy.optimize.minimize(opt_fun, params_values_init, args=(), method='Nelder-Mead')
 
 
 def optimize_drag_neldermead():
@@ -163,7 +248,7 @@ def optimize_sideband_neldermead():
     freq_lambda = (freq_ge + alpha) / freq_ge
     optimal_beta = freq_lambda ** 2 / (4 * alpha)
 
-    params_init = {'A': 0.52507664457372316, 'flat_len': 77.216545384908301, 'freq': 3.4018767806417873}
+    params_init = {'A': 0.52271155140480463, 'flat_len': 77.921376826335546, 'freq': 3.4018974869929988}
 
     params_values_init = np.array([v for v in params_init.values()])
     print(params_values_init)
@@ -177,11 +262,11 @@ def optimize_sideband_neldermead():
 
         print("params: %s" % params)
 
-        multiple_sequences, readout_time_list = sideband_optimization_neldermead(sequencer, params, plot=False)
+        multiple_sequences, readout_time_list = sideband_optimization_neldermead(sequencer, params, plot=True)
 
         awg_readout_time_list = get_awg_readout_time(readout_time_list)
 
-        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
+        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=True)
 
         Pe_list = measured_data[:, 1]
 
@@ -202,4 +287,5 @@ def get_awg_readout_time(readout_time_list):
 
 if __name__ == "__main__":
     # optimize_drag_neldermead()
-    optimize_sideband_neldermead()
+    # optimize_sideband_neldermead()
+    optimize_arb_neldermead()
