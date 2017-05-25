@@ -50,12 +50,12 @@ def rabi(sequencer):
 
     readout_time_list = []
 
-    for rabi_len in np.arange(0, 10, 0.5):
+    for rabi_len in np.arange(0, 10, 1.0):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
+                         Gauss(max_amp=0.2, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
         readout_time = readout(sequencer)
         readout_time_list.append(readout_time)
 
@@ -123,7 +123,7 @@ def drag_optimization_neldermead(sequencer, params, plot=True):
     sequencer.append('charge1',
                      DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['sigma_len'],
                           cutoff_sigma=2,
-                          freq=4.5, phase=0,
+                          freq=params_now['freq'], phase=0,
                           plot=False))
     readout_time = readout(sequencer)
     readout_time_list.append(readout_time)
@@ -145,9 +145,9 @@ def run_single_experiment():
     data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'])
 
     win = vis.line(
-                X=np.arange(0, len(measured_data)),
-                Y=measured_data,
-                opts=dict(title='experiment data'))
+        X=np.arange(0, len(measured_data)),
+        Y=measured_data,
+        opts=dict(title='experiment data'))
 
 
 def optimize_drag_neldermead():
@@ -163,7 +163,10 @@ def optimize_drag_neldermead():
     freq_lambda = (freq_ge + alpha) / freq_ge
     optimal_beta = freq_lambda ** 2 / (4 * alpha)
 
-    params_init = {'A': 0.10675161505589079, 'beta': -0.93559086069256625, 'sigma_len': 14.054871633775756}
+    # params_init = {'A': 0.4, 'beta': optimal_beta, 'sigma_len': 4.0}
+    params_init = {'A': 0.42563777438563438, 'beta': -0.70673964408726209, 'sigma_len': 3.5783897050108426,
+                   'freq': 4.499996809696226}  # 99.9%
+    # params: {'A': 0.093370909035440874, 'beta': -10.866475110292235, 'sigma_len': 16.027265455966429} # gaussian pulse
 
     params_values_init = np.array([v for v in params_init.values()])
     print(params_values_init)
@@ -183,7 +186,7 @@ def optimize_drag_neldermead():
 
         data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
 
-        Pe_list = measured_data[:, 1]
+        Pe_list = measured_data[:, 2]
 
         print("Current value: %s" % Pe_list[0])
 
@@ -201,5 +204,5 @@ def get_awg_readout_time(readout_time_list):
 
 
 if __name__ == "__main__":
-    run_single_experiment()
-    # optimize_drag_neldermead()
+    # run_single_experiment()
+    optimize_drag_neldermead()
