@@ -5,6 +5,7 @@ from qutip_experiment import run_qutip_experiment
 import numpy as np
 import visdom
 
+# channels and awgs
 
 channels = ['charge1', 'flux1', 'charge2', 'flux2',
             'hetero1_I', 'hetero1_Q', 'hetero2_I', 'hetero2_Q',
@@ -19,6 +20,11 @@ awg_info = {'m8195a': {'dt': 1. / 16., 'min_increment': 16, 'min_samples': 128, 
             'tek5014a': {'dt': 1. / 1.2, 'min_increment': 16, 'min_samples': 128, 'time_delay': 0}}
 
 channels_delay = {'readout1_trig': -20, 'readout2_trig': -20, 'alazar_trig': -50}
+
+
+# pulse params
+drag_pi = {'A': 0.0701200429, 'beta': -0.6998354176626167, 'sigma_len': 3.4692014249759544,
+           'freq': 4.4995338309483905}
 
 
 def readout(sequencer):
@@ -45,6 +51,34 @@ def readout(sequencer):
     return readout_time
 
 
+def sideband_rabi(sequencer):
+    # rabi sequences
+
+    readout_time_list = []
+
+    for rabi_len in np.arange(0, 200, 20):
+        sequencer.new_sequence()
+
+        sequencer.append('m8195a_trig', Ones(time=100))
+        sequencer.append('charge1',
+                         DRAG(A=drag_pi['A'], beta=drag_pi['beta'], sigma_len=drag_pi['sigma_len'],
+                              cutoff_sigma=2,
+                              freq=drag_pi['freq'], phase=0,
+                              plot=False))
+        sequencer.sync_channels_time(channels)
+        sequencer.append('flux1',
+                         Square(max_amp=0.5, flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=3.4, phase=0,
+                                plot=False))
+        # sequencer.append('flux1',
+        # Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=3.4, phase=0, plot=False))
+        readout_time = readout(sequencer)
+        readout_time_list.append(readout_time)
+
+        sequencer.end_sequence()
+
+    return sequencer.complete(plot=True), np.array(readout_time_list)
+
+
 def rabi(sequencer):
     # rabi sequences
 
@@ -55,7 +89,7 @@ def rabi(sequencer):
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         Gauss(max_amp=0.2, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
+                         Gauss(max_amp=0.05, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
         readout_time = readout(sequencer)
         readout_time_list.append(readout_time)
 
@@ -74,7 +108,7 @@ def t1(sequencer):
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         Gauss(max_amp=0.5, sigma_len=7, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
+                         Gauss(max_amp=0.01, sigma_len=7, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
         sequencer.append('charge1', Idle(time=idle_len))
         readout_time = readout(sequencer)
         readout_time_list.append(readout_time)
@@ -99,7 +133,7 @@ def drag_rabi(sequencer):
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         DRAG(A=0.3, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0,
+                         DRAG(A=0.1, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0,
                               plot=False))
         readout_time = readout(sequencer)
         readout_time_list.append(readout_time)
@@ -139,10 +173,10 @@ def run_single_experiment():
 
     sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
-    multiple_sequences, readout_time_list = rabi(sequencer)
+    multiple_sequences, readout_time_list = sideband_rabi(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
-    data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'])
+    data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
 
     win = vis.line(
         X=np.arange(0, len(measured_data)),
@@ -186,7 +220,7 @@ def optimize_drag_neldermead():
 
         data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
 
-        Pe_list = measured_data[:, 2]
+        Pe_list = measured_data[:, 1]
 
         print("Current value: %s" % Pe_list[0])
 
@@ -204,5 +238,5 @@ def get_awg_readout_time(readout_time_list):
 
 
 if __name__ == "__main__":
-    # run_single_experiment()
-    optimize_drag_neldermead()
+    run_single_experiment()
+    # optimize_drag_neldermead()
