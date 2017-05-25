@@ -69,7 +69,7 @@ def sideband_rabi(sequencer):
         sequencer.append('flux1',
                          Square(max_amp=0.5, flat_len=150, ramp_sigma_len=5, cutoff_sigma=2, freq=freq, phase=0,
                                 plot=False))
-        sequencer.append('flux1', Idle(time=100))
+        sequencer.append('flux1', Idle(time=200))
         # sequencer.append('flux1',
         # Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=3.4, phase=0, plot=False))
         readout_time = readout(sequencer)
@@ -144,67 +144,13 @@ def drag_rabi(sequencer):
     return sequencer.complete(plot=True), np.array(readout_time_list)
 
 
-def drag_optimization_neldermead(sequencer, params, plot=True):
-    # drag_rabi sequences
-
-    readout_time_list = []
-
-    # using current params
-    params_now = params.copy()
-
-    sequencer.new_sequence()
-
-    sequencer.append('m8195a_trig', Ones(time=100))
-    sequencer.append('charge1',
-                     DRAG(A=params_now['A'], beta=params_now['beta'], sigma_len=params_now['sigma_len'],
-                          cutoff_sigma=2,
-                          freq=params_now['freq'], phase=0,
-                          plot=False))
-    readout_time = readout(sequencer)
-    readout_time_list.append(readout_time)
-
-    sequencer.end_sequence()
-
-    return sequencer.complete(plot=plot), np.array(readout_time_list)
-
-
-def sideband_optimization_neldermead(sequencer, params, plot=True):
-    # drag_rabi sequences
-
-    readout_time_list = []
-
-    # using current params
-    params_now = params.copy()
-
-    sequencer.new_sequence()
-
-    sequencer.append('m8195a_trig', Ones(time=100))
-    sequencer.append('charge1',
-                     DRAG(A=drag_pi['A'], beta=drag_pi['beta'], sigma_len=drag_pi['sigma_len'],
-                          cutoff_sigma=2,
-                          freq=drag_pi['freq'], phase=0,
-                          plot=False))
-    sequencer.sync_channels_time(channels)
-    sequencer.append('flux1',
-                     Square(max_amp=params_now['A'], flat_len=params_now['flat_len'], ramp_sigma_len=5, cutoff_sigma=2,
-                            freq=params_now['freq'], phase=0,
-                            plot=False))
-    sequencer.append('flux1', Idle(time=100))
-    readout_time = readout(sequencer)
-    readout_time_list.append(readout_time)
-
-    sequencer.end_sequence()
-
-    return sequencer.complete(plot=plot), np.array(readout_time_list)
-
-
 def run_single_experiment():
     vis = visdom.Visdom()
     vis.close()
 
     sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
-    multiple_sequences, readout_time_list = sideband_rabi(sequencer)
+    multiple_sequences, readout_time_list = rabi(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
     data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
@@ -213,93 +159,6 @@ def run_single_experiment():
         X=np.arange(0, len(measured_data)),
         Y=measured_data,
         opts=dict(title='experiment data'))
-
-
-def optimize_drag_neldermead():
-    vis = visdom.Visdom()
-    vis.close()
-
-    import scipy
-
-
-    freq_ge = 4.5  # GHz
-    alpha = - 0.125  # GHz
-
-    freq_lambda = (freq_ge + alpha) / freq_ge
-    optimal_beta = freq_lambda ** 2 / (4 * alpha)
-
-    # params_init = {'A': 0.4, 'beta': optimal_beta, 'sigma_len': 4.0}
-    params_init = {'A': 0.42563777438563438, 'beta': -0.70673964408726209, 'sigma_len': 3.5783897050108426,
-                   'freq': 4.499996809696226}  # 99.9%
-    # params: {'A': 0.093370909035440874, 'beta': -10.866475110292235, 'sigma_len': 16.027265455966429} # gaussian pulse
-
-    params_values_init = np.array([v for v in params_init.values()])
-    print(params_values_init)
-
-    def opt_fun(params_values):
-        sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
-
-        params = {}
-        for ii, params_key in enumerate(params_init.keys()):
-            params[params_key] = params_values[ii]
-
-        print("params: %s" % params)
-
-        multiple_sequences, readout_time_list = drag_optimization_neldermead(sequencer, params, plot=False)
-
-        awg_readout_time_list = get_awg_readout_time(readout_time_list)
-
-        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
-
-        Pe_list = measured_data[:, 1]
-
-        print("Current value: %s" % Pe_list[0])
-
-        return (1 - Pe_list[0])
-
-    scipy.optimize.minimize(opt_fun, params_values_init, args=(), method='Nelder-Mead')
-
-
-def optimize_sideband_neldermead():
-    vis = visdom.Visdom()
-    vis.close()
-
-    import scipy
-
-
-    freq_ge = 4.5  # GHz
-    alpha = - 0.125  # GHz
-
-    freq_lambda = (freq_ge + alpha) / freq_ge
-    optimal_beta = freq_lambda ** 2 / (4 * alpha)
-
-    params_init = {'A': 0.52507664457372316, 'flat_len': 77.216545384908301, 'freq': 3.4018767806417873}
-
-    params_values_init = np.array([v for v in params_init.values()])
-    print(params_values_init)
-
-    def opt_fun(params_values):
-        sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
-
-        params = {}
-        for ii, params_key in enumerate(params_init.keys()):
-            params[params_key] = params_values[ii]
-
-        print("params: %s" % params)
-
-        multiple_sequences, readout_time_list = sideband_optimization_neldermead(sequencer, params, plot=True)
-
-        awg_readout_time_list = get_awg_readout_time(readout_time_list)
-
-        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=True)
-
-        Pe_list = measured_data[:, 1]
-
-        print("Current value: %s" % Pe_list[0])
-
-        return (Pe_list[0])
-
-    scipy.optimize.minimize(opt_fun, params_values_init, args=(), method='Nelder-Mead')
 
 
 def get_awg_readout_time(readout_time_list):
@@ -311,6 +170,4 @@ def get_awg_readout_time(readout_time_list):
 
 
 if __name__ == "__main__":
-    # run_single_experiment()
-    # optimize_drag_neldermead()
-    optimize_sideband_neldermead()
+    run_single_experiment()
