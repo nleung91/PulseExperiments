@@ -146,7 +146,7 @@ def arb_sideband_optimization_neldermead(sequencer, params, plot=True):
                           plot=False))
     sequencer.sync_channels_time(channels)
     sequencer.append('flux1',
-                     ARB(A_list=params_now['A_list'], B_list=params_now['B_list'], len=params_now['len'],
+                     ARB(A_list=params_now['A_list'], B_list=[0, 0], len=params_now['len'],
                          freq=params_now['freq'], phase=0,
                          plot=False))
     sequencer.append('flux1', Idle(time=200))
@@ -207,7 +207,7 @@ def optimize_arb_neldermead():
 
         awg_readout_time_list = get_awg_readout_time(readout_time_list)
 
-        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=True)
+        data, measured_data, dt = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=True)
 
         Pe_list = measured_data[:, 1]
 
@@ -252,7 +252,7 @@ def optimize_drag_neldermead():
 
         awg_readout_time_list = get_awg_readout_time(readout_time_list)
 
-        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
+        data, measured_data, dt = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
 
         Pe_list = measured_data[:, 1]
 
@@ -294,7 +294,7 @@ def optimize_sideband_neldermead():
 
         awg_readout_time_list = get_awg_readout_time(readout_time_list)
 
-        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=True)
+        data, measured_data, dt = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=True)
 
         Pe_list = measured_data[:, 1]
 
@@ -311,7 +311,7 @@ def optimize_arb_sideband_neldermead():
 
     import scipy
 
-    params_init = {'A_list': [0.51207953, 0.48719588, 0.50377773], 'B_list': [0.50808107, 0.48305012, 0.50398184],
+    params_init = {'A_list': [0.3, 0.4, 0.5, 0.6, 0.7],
                    'len': 73.541223556941844, 'freq': 3.4016619220703097}
 
     params_values_init_list = []
@@ -343,36 +343,45 @@ def optimize_arb_sideband_neldermead():
 
         print("params: %s" % params)
 
-        multiple_sequences, readout_time_list = arb_sideband_optimization_neldermead(sequencer, params, plot=True)
+        multiple_sequences, readout_time_list = arb_sideband_optimization_neldermead(sequencer, params, plot=False)
 
         awg_readout_time_list = get_awg_readout_time(readout_time_list)
 
-        data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=True)
+        data, measured_data, dt = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
 
         Pe_list = measured_data[:, 1]
 
-        print("Current value: %s" % Pe_list[0])
+        print("Pe value: %s" % Pe_list[0])
 
-        resonator_population_traj = data[0, 3, :]
-        print(resonator_population_traj.shape)
+        resonator_population_traj = np.abs(data[0, 3, :])
         resonator_population_traj_with_photon_bool = resonator_population_traj > 0.01
         resonator_population_traj_with_photon_bool_adj = resonator_population_traj_with_photon_bool[
                                                          1:] - resonator_population_traj_with_photon_bool[:-1]
         boundary_index = np.where(resonator_population_traj_with_photon_bool_adj == True)
 
-        min_boundary_index = np.min(boundary_index)
-        max_boundary_index = np.max(boundary_index)
+        if boundary_index[0].size:
+            min_boundary_index = np.min(boundary_index)
+            max_boundary_index = np.max(boundary_index)
 
-        print(min_boundary_index)
-        print(max_boundary_index)
+            resonator_population_traj_with_photon = resonator_population_traj[min_boundary_index:max_boundary_index]
+            resonator_population_traj_with_photon_flip = resonator_population_traj_with_photon[::-1]
 
-        resonator_population_traj_with_photon = resonator_population_traj[min_boundary_index:max_boundary_index]
-        resonator_population_traj_with_photon_flip = resonator_population_traj_with_photon[::-1]
+            resonator_population_traj_with_photon_asym = np.mean(
+                np.abs(resonator_population_traj_with_photon - resonator_population_traj_with_photon_flip))
+        else:
+            resonator_population_traj_with_photon_asym = 1
 
-        resonator_population_traj_with_photon_asym = np.mean(
-            np.abs(resonator_population_traj_with_photon - resonator_population_traj_with_photon_flip))
+        print("Photon asymmetry: %s" % resonator_population_traj_with_photon_asym)
 
-        return (Pe_list[0]+resonator_population_traj_with_photon_asym)
+        T1 = 35.0
+        photon_emitted = 1 / T1 * np.sum(resonator_population_traj) * dt
+
+        if photon_emitted >= 1:
+            photon_emitted = 1
+
+        print("Photon emitted: %s" % photon_emitted)
+
+        return (resonator_population_traj_with_photon_asym + (1 - photon_emitted))
 
     scipy.optimize.minimize(opt_fun, params_values_init, args=(), method='Nelder-Mead')
 

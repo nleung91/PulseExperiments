@@ -153,7 +153,7 @@ def run_single_experiment():
     multiple_sequences, readout_time_list = rabi(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
-    data, measured_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
+    data, measured_data, dt = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
 
     win = vis.line(
         X=np.arange(0, len(measured_data)),
