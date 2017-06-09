@@ -401,6 +401,37 @@ def optimize_arb_sideband_neldermead():
 
         d_unwrap_phase_dt = (unwrap_phase[1:] - unwrap_phase[:-1]) / dt
 
+        if boundary_index[0].size:
+            min_boundary_index = np.min(boundary_index)
+            max_boundary_index = np.max(boundary_index)
+
+            resonator_unwrap_phase_traj_with_photon = unwrap_phase[min_boundary_index:max_boundary_index]
+            resonator_unwrap_phase_traj_with_photon_flip = resonator_unwrap_phase_traj_with_photon[::-1]
+
+            resonator_unwrap_phase_time_reversal_difference = (resonator_unwrap_phase_traj_with_photon - (
+                -resonator_unwrap_phase_traj_with_photon_flip)) % (2 * np.pi)
+
+            resonator_unwrap_phase_time_reversal_difference_on_S1 = np.abs(
+                np.exp(1j * resonator_unwrap_phase_time_reversal_difference) - 1)
+
+            resonator_phase_traj_with_photon_asym = np.mean(
+                np.abs(resonator_unwrap_phase_time_reversal_difference_on_S1))
+
+            win = vis.line(
+                X=np.arange(0, resonator_unwrap_phase_traj_with_photon_flip.shape[0] * dt, dt),
+                Y=resonator_unwrap_phase_time_reversal_difference,
+                opts=dict(title='resonator photon unwrap phase difference', xlabel='Time (ns)'))
+
+            win = vis.line(
+                X=np.arange(0, resonator_unwrap_phase_traj_with_photon_flip.shape[0] * dt, dt),
+                Y=resonator_unwrap_phase_time_reversal_difference_on_S1,
+                opts=dict(title='resonator photon unwrap phase difference on S1', xlabel='Time (ns)'))
+
+
+        else:
+            resonator_phase_traj_with_photon_asym = 1
+
+        print("Photon phase asymmetry: %s" % resonator_phase_traj_with_photon_asym)
 
         # plot photon emission with phase
 
@@ -410,18 +441,19 @@ def optimize_arb_sideband_neldermead():
             opts=dict(title='resonator photon', xlabel='Time (ns)'))
 
         win = vis.line(
-            X=np.arange(0, (rho_data.shape[1]-200) * dt, dt),
+            X=np.arange(0, unwrap_phase.shape[0] * dt, dt),
             Y=unwrap_phase,
             opts=dict(title='resonator photon unwrap phase', xlabel='Time (ns)'))
 
         win = vis.line(
-            X=np.arange(0, (rho_data.shape[1] - 201) * dt, dt),
+            X=np.arange(0, d_unwrap_phase_dt.shape[0] * dt, dt),
             Y=-d_unwrap_phase_dt / (2 * np.pi),
             opts=dict(title='resonator photon d_(-phase/2pi)_dt', xlabel='Time (ns)'))
 
         #
 
-        return (resonator_population_traj_with_photon_asym + (1 - photon_emitted))
+        return (
+            resonator_population_traj_with_photon_asym + resonator_phase_traj_with_photon_asym + (1 - photon_emitted))
 
     scipy.optimize.minimize(opt_fun, params_values_init, args=(), method='Nelder-Mead')
 
