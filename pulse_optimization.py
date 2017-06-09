@@ -305,14 +305,25 @@ def optimize_sideband_neldermead():
     scipy.optimize.minimize(opt_fun, params_values_init, args=(), method='Nelder-Mead')
 
 
+def smooth(y, box_pts):
+    box = np.ones(box_pts) / box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    return y_smooth
+
+
 def optimize_arb_sideband_neldermead():
     vis = visdom.Visdom()
     vis.close()
 
     import scipy
 
-    params_init = {'A_list': [0.3, 0.4, 0.5, 0.6, 0.7],
-                   'len': 73.541223556941844, 'freq': 3.4016619220703097}
+    params_init = {'A_list': [0.05978269, 0.10920688, 0.10078365, 0.12510079, 0.22188885,
+                              0.28583667, 0.35576019, 0.35214175, 0.46856475, 0.38389001], 'len': 253.53121268390953,
+                   'freq': 3.4018299167777521}
+
+
+    # Photon asymmetry: 0.0149853537694
+    # Photon emitted: 0.989967891176
 
     params_values_init_list = []
     # for params_key in params_init.keys():
@@ -343,11 +354,15 @@ def optimize_arb_sideband_neldermead():
 
         print("params: %s" % params)
 
-        multiple_sequences, readout_time_list = arb_sideband_optimization_neldermead(sequencer, params, plot=False)
+        multiple_sequences, readout_time_list = arb_sideband_optimization_neldermead(sequencer, params, plot=True)
 
         awg_readout_time_list = get_awg_readout_time(readout_time_list)
 
-        data, measured_data, dt = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], plot=False)
+        data, measured_data, dt, rho_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'],
+                                                                 plot=True)
+
+        print(rho_data.shape)
+        resonator_phase = np.angle(rho_data[0, :, 3, 0])
 
         Pe_list = measured_data[:, 1]
 
@@ -367,7 +382,8 @@ def optimize_arb_sideband_neldermead():
             resonator_population_traj_with_photon_flip = resonator_population_traj_with_photon[::-1]
 
             resonator_population_traj_with_photon_asym = np.mean(
-                np.abs(resonator_population_traj_with_photon - resonator_population_traj_with_photon_flip))
+                np.abs(resonator_population_traj_with_photon - resonator_population_traj_with_photon_flip)) / np.max(
+                resonator_population_traj_with_photon)
         else:
             resonator_population_traj_with_photon_asym = 1
 
@@ -380,6 +396,30 @@ def optimize_arb_sideband_neldermead():
             photon_emitted = 1
 
         print("Photon emitted: %s" % photon_emitted)
+
+        unwrap_phase = smooth(np.unwrap(resonator_phase), 100)[100:-100]
+
+        d_unwrap_phase_dt = (unwrap_phase[1:] - unwrap_phase[:-1]) / dt
+
+
+        # plot photon emission with phase
+
+        win = vis.line(
+            X=np.arange(0, rho_data.shape[1] * dt, dt),
+            Y=resonator_population_traj * np.cos(resonator_phase),
+            opts=dict(title='resonator photon', xlabel='Time (ns)'))
+
+        win = vis.line(
+            X=np.arange(0, (rho_data.shape[1]-200) * dt, dt),
+            Y=unwrap_phase,
+            opts=dict(title='resonator photon unwrap phase', xlabel='Time (ns)'))
+
+        win = vis.line(
+            X=np.arange(0, (rho_data.shape[1] - 201) * dt, dt),
+            Y=-d_unwrap_phase_dt / (2 * np.pi),
+            opts=dict(title='resonator photon d_(-phase/2pi)_dt', xlabel='Time (ns)'))
+
+        #
 
         return (resonator_population_traj_with_photon_asym + (1 - photon_emitted))
 
