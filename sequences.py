@@ -1,6 +1,6 @@
 from sequencer import Sequencer
 from pulse_classes import Gauss, Idle, Ones, Square, DRAG
-from qutip_experiment import run_qutip_experiment
+#from qutip_experiment import run_qutip_experiment
 
 import numpy as np
 import visdom
@@ -90,7 +90,7 @@ def rabi(sequencer):
 
         sequencer.append('m8195a_trig', Ones(time=100))
         sequencer.append('charge1',
-                         Gauss(max_amp=0.05, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
+                         Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
         readout_time = readout(sequencer)
         readout_time_list.append(readout_time)
 
@@ -153,12 +153,12 @@ def run_single_experiment():
     multiple_sequences, readout_time_list = rabi(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
-    data, measured_data, dt, rho_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
-
-    win = vis.line(
-        X=np.arange(0, len(measured_data)),
-        Y=measured_data,
-        opts=dict(title='experiment data'))
+    # data, measured_data, dt, rho_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
+    #
+    # win = vis.line(
+    #     X=np.arange(0, len(measured_data)),
+    #     Y=measured_data,
+    #     opts=dict(title='experiment data'))
 
 
 def get_awg_readout_time(readout_time_list):

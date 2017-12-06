@@ -147,7 +147,7 @@ def arb_sideband_optimization_neldermead(sequencer, params, plot=True):
     sequencer.sync_channels_time(channels)
     sequencer.append('flux1',
                      ARB(A_list=params_now['A_list'], B_list=[0, 0], len=params_now['len'],
-                         freq=params_now['freq'], phase=0,
+                         freq=params_now['freq'], phase=params_now['phase'],
                          plot=False))
     sequencer.append('flux1', Idle(time=200))
     readout_time = readout(sequencer)
@@ -319,7 +319,7 @@ def optimize_arb_sideband_neldermead():
 
     params_init = {'A_list': [0.05978269, 0.10920688, 0.10078365, 0.12510079, 0.22188885,
                               0.28583667, 0.35576019, 0.35214175, 0.46856475, 0.38389001], 'len': 253.53121268390953,
-                   'freq': 3.4018299167777521}
+                   'freq': 3.4018299167777521, 'phase': -1.0}
 
 
     # Photon asymmetry: 0.0149853537694
@@ -339,6 +339,9 @@ def optimize_arb_sideband_neldermead():
     params_values_init = np.array(params_values_init_list)
 
     def opt_fun(params_values):
+
+        PLOT = False
+
         sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
         params = {}
@@ -354,12 +357,12 @@ def optimize_arb_sideband_neldermead():
 
         print("params: %s" % params)
 
-        multiple_sequences, readout_time_list = arb_sideband_optimization_neldermead(sequencer, params, plot=True)
+        multiple_sequences, readout_time_list = arb_sideband_optimization_neldermead(sequencer, params, plot=PLOT)
 
         awg_readout_time_list = get_awg_readout_time(readout_time_list)
 
         data, measured_data, dt, rho_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'],
-                                                                 plot=True)
+                                                                 plot=PLOT)
 
         print(rho_data.shape)
         resonator_phase = np.angle(rho_data[0, :, 3, 0])
@@ -417,38 +420,39 @@ def optimize_arb_sideband_neldermead():
             resonator_phase_traj_with_photon_asym = np.mean(
                 np.abs(resonator_unwrap_phase_time_reversal_difference_on_S1))
 
-            win = vis.line(
-                X=np.arange(0, resonator_unwrap_phase_traj_with_photon_flip.shape[0] * dt, dt),
-                Y=resonator_unwrap_phase_time_reversal_difference,
-                opts=dict(title='resonator photon unwrap phase difference', xlabel='Time (ns)'))
+            if PLOT:
+                win = vis.line(
+                    X=np.arange(0, resonator_unwrap_phase_traj_with_photon_flip.shape[0] * dt, dt),
+                    Y=resonator_unwrap_phase_time_reversal_difference,
+                    opts=dict(title='resonator photon unwrap phase difference', xlabel='Time (ns)'))
 
-            win = vis.line(
-                X=np.arange(0, resonator_unwrap_phase_traj_with_photon_flip.shape[0] * dt, dt),
-                Y=resonator_unwrap_phase_time_reversal_difference_on_S1,
-                opts=dict(title='resonator photon unwrap phase difference on S1', xlabel='Time (ns)'))
-
+                win = vis.line(
+                    X=np.arange(0, resonator_unwrap_phase_traj_with_photon_flip.shape[0] * dt, dt),
+                    Y=resonator_unwrap_phase_time_reversal_difference_on_S1,
+                    opts=dict(title='resonator photon unwrap phase difference on S1', xlabel='Time (ns)'))
 
         else:
-            resonator_phase_traj_with_photon_asym = 1
+            resonator_phase_traj_with_photon_asym = 2
 
         print("Photon phase asymmetry: %s" % resonator_phase_traj_with_photon_asym)
 
         # plot photon emission with phase
 
-        win = vis.line(
-            X=np.arange(0, rho_data.shape[1] * dt, dt),
-            Y=resonator_population_traj * np.cos(resonator_phase),
-            opts=dict(title='resonator photon', xlabel='Time (ns)'))
+        if PLOT:
+            win = vis.line(
+                X=np.arange(0, rho_data.shape[1] * dt, dt),
+                Y=resonator_population_traj * np.cos(resonator_phase),
+                opts=dict(title='resonator photon', xlabel='Time (ns)'))
 
-        win = vis.line(
-            X=np.arange(0, unwrap_phase.shape[0] * dt, dt),
-            Y=unwrap_phase,
-            opts=dict(title='resonator photon unwrap phase', xlabel='Time (ns)'))
+            win = vis.line(
+                X=np.arange(0, unwrap_phase.shape[0] * dt, dt),
+                Y=unwrap_phase,
+                opts=dict(title='resonator photon unwrap phase', xlabel='Time (ns)'))
 
-        win = vis.line(
-            X=np.arange(0, d_unwrap_phase_dt.shape[0] * dt, dt),
-            Y=-d_unwrap_phase_dt / (2 * np.pi),
-            opts=dict(title='resonator photon d_(-phase/2pi)_dt', xlabel='Time (ns)'))
+            win = vis.line(
+                X=np.arange(0, d_unwrap_phase_dt.shape[0] * dt, dt),
+                Y=-d_unwrap_phase_dt / (2 * np.pi),
+                opts=dict(title='resonator photon d_(-phase/2pi)_dt', xlabel='Time (ns)'))
 
         #
 
