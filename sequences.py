@@ -143,13 +143,13 @@ def drag_rabi(sequencer):
     return sequencer.complete(plot=True), np.array(readout_time_list)
 
 
-def run_single_experiment():
+def run_single_experiment(experiment):
     vis = visdom.Visdom()
     vis.close()
 
     sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
-    multiple_sequences, readout_time_list = sideband_rabi(sequencer)
+    multiple_sequences, readout_time_list = experiment(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
     # data, measured_data, dt, rho_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
@@ -169,4 +169,4 @@ def get_awg_readout_time(readout_time_list):
 
 
 if __name__ == "__main__":
-    run_single_experiment()
+    run_single_experiment(sideband_rabi)
