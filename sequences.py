@@ -1,5 +1,5 @@
-from sequencer import Sequencer
-from pulse_classes import Gauss, Idle, Ones, Square, DRAG
+from .sequencer import Sequencer
+from .pulse_classes import Gauss, Idle, Ones, Square, DRAG
 #from qutip_experiment import run_qutip_experiment
 
 import numpy as np
@@ -29,6 +29,9 @@ drag_pi = {'A': 0.0701200429, 'beta': -0.6998354176626167, 'sigma_len': 3.469201
 qubit_freq = 4.5
 
 qubit_1_pi = Gauss(max_amp=0.5, sigma_len=7, cutoff_sigma=2, freq=qubit_freq, phase=0, plot=False)
+
+
+multimodes = {'freq':[1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9], 'pi_len':[100,100,100,100,100,100,100,100]}
 
 
 def readout(sequencer):
@@ -147,7 +150,7 @@ def run_single_experiment(experiment):
 
     sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
-    multiple_sequences, readout_time_list = experiment(sequencer)
+    multiple_sequences, readout_time_list = eval(experiment)(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
 

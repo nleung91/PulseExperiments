@@ -1,7 +1,7 @@
 import visdom
 import numpy as np
 
-from pulse_classes import Gauss, Idle, Ones, Square
+from .pulse_classes import Gauss, Idle, Ones, Square
 
 
 class Sequencer:
