@@ -1,5 +1,9 @@
-from .sequencer import Sequencer
-from .pulse_classes import Gauss, Idle, Ones, Square, DRAG
+try:
+    from .sequencer import Sequencer
+    from .pulse_classes import Gauss, Idle, Ones, Square, DRAG
+except:
+    from sequencer import Sequencer
+    from pulse_classes import Gauss, Idle, Ones, Square, DRAG
 #from qutip_experiment import run_qutip_experiment
 
 import numpy as np
@@ -164,4 +168,4 @@ def get_awg_readout_time(readout_time_list):
 
 
 if __name__ == "__main__":
-    run_single_experiment(sideband_rabi)
+    run_single_experiment('sideband_rabi')
