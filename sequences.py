@@ -70,8 +70,6 @@ def sideband_rabi(sequencer):
                          Square(max_amp=0.5, flat_len=150, ramp_sigma_len=5, cutoff_sigma=2, freq=freq, phase=0,
                                 plot=False))
         sequencer.append('flux1', Idle(time=200))
-        # sequencer.append('flux1',
-        # Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=3.4, phase=0, plot=False))
         readout_time = readout(sequencer)
         readout_time_list.append(readout_time)
 
@@ -152,12 +150,6 @@ def run_single_experiment(experiment):
     multiple_sequences, readout_time_list = experiment(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
-    # data, measured_data, dt, rho_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
-    #
-    # win = vis.line(
-    #     X=np.arange(0, len(measured_data)),
-    #     Y=measured_data,
-    #     opts=dict(title='experiment data'))
 
 
 def get_awg_readout_time(readout_time_list):
