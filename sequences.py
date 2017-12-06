@@ -26,6 +26,10 @@ channels_delay = {'readout1_trig': -20, 'readout2_trig': -20, 'alazar_trig': -50
 drag_pi = {'A': 0.0701200429, 'beta': -0.6998354176626167, 'sigma_len': 3.4692014249759544,
            'freq': 4.4995338309483905}
 
+qubit_freq = 4.5
+
+qubit_1_pi = Gauss(max_amp=0.5, sigma_len=7, cutoff_sigma=2, freq=qubit_freq, phase=0, plot=False)
+
 
 def readout(sequencer):
     sequencer.sync_channels_time(channels)
@@ -60,11 +64,7 @@ def sideband_rabi(sequencer):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
-        sequencer.append('charge1',
-                         DRAG(A=drag_pi['A'], beta=drag_pi['beta'], sigma_len=drag_pi['sigma_len'],
-                              cutoff_sigma=2,
-                              freq=drag_pi['freq'], phase=0,
-                              plot=False))
+        sequencer.append('charge1',qubit_1_pi)
         sequencer.sync_channels_time(channels)
         sequencer.append('flux1',
                          Square(max_amp=0.5, flat_len=150, ramp_sigma_len=5, cutoff_sigma=2, freq=freq, phase=0,
@@ -108,8 +108,7 @@ def t1(sequencer):
         sequencer.new_sequence()
 
         sequencer.append('m8195a_trig', Ones(time=100))
-        sequencer.append('charge1',
-                         Gauss(max_amp=0.01, sigma_len=7, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
+        sequencer.append('charge1', qubit_1_pi)
         sequencer.append('charge1', Idle(time=idle_len))
         readout_time = readout(sequencer)
         readout_time_list.append(readout_time)
@@ -150,7 +149,7 @@ def run_single_experiment():
 
     sequencer = Sequencer(channels, channels_awg, awg_info, channels_delay)
 
-    multiple_sequences, readout_time_list = rabi(sequencer)
+    multiple_sequences, readout_time_list = sideband_rabi(sequencer)
 
     awg_readout_time_list = get_awg_readout_time(readout_time_list)
     # data, measured_data, dt, rho_data = run_qutip_experiment(multiple_sequences, awg_readout_time_list['m8195a'], progress_bar=True)
