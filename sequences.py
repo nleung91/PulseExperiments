@@ -13,18 +13,12 @@ import visdom
 class PulseSequences:
     # channels and awgs
 
-    def set_parameters(self):
-        self.channels = ['charge1', 'flux1', 'charge2', 'flux2',
-                    'hetero1_I', 'hetero1_Q', 'hetero2_I', 'hetero2_Q',
-                    'm8195a_trig', 'readout1_trig', 'readout2_trig', 'alazar_trig']
+    def set_parameters(self,cfg):
+        self.channels = cfg['channels']
 
-        self.channels_awg = {'charge1': 'm8195a', 'flux1': 'm8195a', 'charge2': 'm8195a', 'flux2': 'm8195a',
-                        'hetero1_I': 'tek5014a', 'hetero1_Q': 'tek5014a', 'hetero2_I': 'tek5014a', 'hetero2_Q': 'tek5014a',
-                        'm8195a_trig': 'tek5014a', 'readout1_trig': 'tek5014a', 'readout2_trig': 'tek5014a',
-                        'alazar_trig': 'tek5014a'}
+        self.channels_awg = cfg['channels_awg']
 
-        self.awg_info = {'m8195a': {'dt': 1. / 16., 'min_increment': 16, 'min_samples': 128, 'time_delay': 110},
-                    'tek5014a': {'dt': 1. / 1.2, 'min_increment': 16, 'min_samples': 128, 'time_delay': 0}}
+        self.awg_info = cfg['awg_info']
 
         self.channels_delay = {'readout1_trig': -20, 'readout2_trig': -20, 'alazar_trig': -50}
 
@@ -33,14 +27,14 @@ class PulseSequences:
         self.drag_pi = {'A': 0.0701200429, 'beta': -0.6998354176626167, 'sigma_len': 3.4692014249759544,
                    'freq': 4.4995338309483905}
 
-        self.qubit_freq = 4.5
+        self.qubit_freq = cfg['qubit']['freq']
 
         self.qubit_1_pi = Gauss(max_amp=0.5, sigma_len=7, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False)
 
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9], 'pi_len': [100, 100, 100, 100, 100, 100, 100, 100]}
 
-    def __init__(self):
-        self.set_parameters()
+    def __init__(self,cfg):
+        self.set_parameters(cfg)
 
 
     def readout(self, sequencer):
