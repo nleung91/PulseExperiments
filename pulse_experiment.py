@@ -1,8 +1,12 @@
 from slab import InstrumentManager
 
-def run_experiment():
-    im = InstrumentManager()
 
-    tek = im['TEK']
+class Experiment:
+    def __init__(self, cfg):
+        im = InstrumentManager()
 
-    print(tek.get_id())
+        self.tek = im['TEK']
+
+
+    def run_experiment(self, sequences):
+        print(self.tek.get_id())

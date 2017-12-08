@@ -13,12 +13,12 @@ import visdom
 class PulseSequences:
     # channels and awgs
 
-    def set_parameters(self, cfg):
-        self.channels = cfg['channels']
+    def set_parameters(self, cfg, hardware_cfg):
+        self.channels = hardware_cfg['channels']
 
-        self.channels_awg = cfg['channels_awg']
+        self.channels_awg = hardware_cfg['channels_awg']
 
-        self.awg_info = cfg['awg_info']
+        self.awg_info = hardware_cfg['awg_info']
 
         self.channels_delay = {'readout1_trig': -20, 'readout2_trig': -20, 'alazar_trig': -50}
 
@@ -34,8 +34,8 @@ class PulseSequences:
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9],
                            'pi_len': [100, 100, 100, 100, 100, 100, 100, 100]}
 
-    def __init__(self, cfg):
-        self.set_parameters(cfg)
+    def __init__(self, cfg, hardware_cfg):
+        self.set_parameters(cfg, hardware_cfg)
 
 
     def readout(self, sequencer):
@@ -160,6 +160,10 @@ class PulseSequences:
 
 if __name__ == "__main__":
     cfg = {
+        "qubit": {"freq": 4.5}
+    }
+
+    hardware_cfg = {
         "channels": [
             "charge1", "flux1", "charge2", "flux2",
             "hetero1_I", "hetero1_Q", "hetero2_I", "hetero2_Q",
@@ -171,11 +175,9 @@ if __name__ == "__main__":
                          "m8195a_trig": "tek5014a", "readout1_trig": "tek5014a", "readout2_trig": "tek5014a",
                          "alazar_trig": "tek5014a"},
         "awg_info": {"m8195a": {"dt": 0.0625, "min_increment": 16, "min_samples": 128, "time_delay": 110},
-                     "tek5014a": {"dt": 0.83333333333, "min_increment": 16, "min_samples": 128, "time_delay": 0}},
-
-        "qubit": {"freq": 4.5}
+                     "tek5014a": {"dt": 0.83333333333, "min_increment": 16, "min_samples": 128, "time_delay": 0}}
     }
 
-    ps = PulseSequences(cfg)
+    ps = PulseSequences(cfg, hardware_cfg)
 
     ps.get_experiment_sequences('rabi')
