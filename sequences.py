@@ -139,13 +139,15 @@ class PulseSequences:
         return sequencer.complete(plot=True)
 
 
-    def run_single_experiment(self, experiment):
+    def get_experiment_sequences(self, experiment):
         vis = visdom.Visdom()
         vis.close()
 
         sequencer = Sequencer(self.channels, self.channels_awg, self.awg_info, self.channels_delay)
 
         multiple_sequences = eval('self.' + experiment)(sequencer)
+
+        return multiple_sequences
 
 
     def get_awg_readout_time(self, readout_time_list):
@@ -176,4 +178,4 @@ if __name__ == "__main__":
 
     ps = PulseSequences(cfg)
 
-    ps.run_single_experiment('rabi')
+    ps.get_experiment_sequences('rabi')
