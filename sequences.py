@@ -67,8 +67,6 @@ class PulseSequences:
     def sideband_rabi(self, sequencer):
         # rabi sequences
 
-        readout_time_list = []
-
         for freq in np.arange(3.39, 3.41, 0.005):
             sequencer.new_sequence()
 
@@ -79,18 +77,15 @@ class PulseSequences:
                              Square(max_amp=0.5, flat_len=150, ramp_sigma_len=5, cutoff_sigma=2, freq=freq, phase=0,
                                     plot=False))
             sequencer.append('flux1', Idle(time=200))
-            readout_time = self.readout(sequencer)
-            readout_time_list.append(readout_time)
+            self.readout(sequencer)
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True), np.array(readout_time_list)
+        return sequencer.complete(plot=True)
 
 
     def rabi(self, sequencer):
         # rabi sequences
-
-        readout_time_list = []
 
         for rabi_len in np.arange(0, 10, 1.0):
             sequencer.new_sequence()
@@ -98,18 +93,15 @@ class PulseSequences:
             sequencer.append('m8195a_trig', Ones(time=100))
             sequencer.append('charge1',
                              Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
-            readout_time = self.readout(sequencer)
-            readout_time_list.append(readout_time)
+            self.readout(sequencer)
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True), np.array(readout_time_list)
+        return sequencer.complete(plot=True)
 
 
     def t1(self, sequencer):
         # t1 sequences
-
-        readout_time_list = []
 
         for idle_len in np.arange(0, 100, 20):
             sequencer.new_sequence()
@@ -117,17 +109,15 @@ class PulseSequences:
             sequencer.append('m8195a_trig', Ones(time=100))
             sequencer.append('charge1', self.qubit_1_pi)
             sequencer.append('charge1', Idle(time=idle_len))
-            readout_time = self.readout(sequencer)
-            readout_time_list.append(readout_time)
+            self.readout(sequencer)
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True), np.array(readout_time_list)
+        return sequencer.complete(plot=True)
 
 
     def drag_rabi(self, sequencer):
         # drag_rabi sequences
-        readout_time_list = []
 
         freq_ge = 4.5  # GHz
         alpha = - 0.125  # GHz
@@ -142,12 +132,11 @@ class PulseSequences:
             sequencer.append('charge1',
                              DRAG(A=0.1, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0,
                                   plot=False))
-            readout_time = self.readout(sequencer)
-            readout_time_list.append(readout_time)
+            self.readout(sequencer)
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True), np.array(readout_time_list)
+        return sequencer.complete(plot=True)
 
 
     def run_single_experiment(self, experiment):
@@ -156,9 +145,7 @@ class PulseSequences:
 
         sequencer = Sequencer(self.channels, self.channels_awg, self.awg_info, self.channels_delay)
 
-        multiple_sequences, readout_time_list = eval('self.' + experiment)(sequencer)
-
-        awg_readout_time_list = self.get_awg_readout_time(readout_time_list)
+        multiple_sequences = eval('self.' + experiment)(sequencer)
 
 
     def get_awg_readout_time(self, readout_time_list):
