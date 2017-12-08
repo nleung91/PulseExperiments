@@ -147,7 +147,19 @@ class PulseSequences:
 
         multiple_sequences = eval('self.' + experiment)(sequencer)
 
-        return multiple_sequences
+        return self.get_sequences(multiple_sequences)
+
+    def get_sequences(self, multiple_sequences):
+        seq_num = len(multiple_sequences)
+
+        sequences = {}
+        for channel in self.channels:
+            channel_waveform = []
+            for seq_id in range(seq_num):
+                channel_waveform.append(multiple_sequences[seq_id][channel])
+            sequences[channel] = np.array(channel_waveform)
+
+        return sequences
 
 
     def get_awg_readout_time(self, readout_time_list):
