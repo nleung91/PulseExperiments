@@ -112,6 +112,32 @@ class PulseSequences:
 
         return sequencer.complete(plot=True)
 
+    def vacuum_rabi(self, sequencer):
+        # vacuum rabi sequences
+        expt_cfg = self.cfg['vacuum_rabi']
+        heterodyne_cfg = self.cfg['heterodyne']
+
+        for iq_freq in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('alazar_trig', Ones(time=100))
+            for qubit_id in expt_cfg['on_qubits']:
+                sequencer.append('hetero%s_I'%qubit_id,
+                                 Square(max_amp=heterodyne_cfg[qubit_id]['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq, phase=0,
+                                        phase_t0=0))
+                sequencer.append('hetero%s_Q'%qubit_id,
+                                 Square(max_amp=heterodyne_cfg[qubit_id]['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq,
+                                        phase=np.pi / 2, phase_t0=0))
+                sequencer.append('readout%s_trig'%qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
+
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(plot=True)
+
 
     def t1(self, sequencer):
         # t1 sequences

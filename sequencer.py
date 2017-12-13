@@ -27,7 +27,7 @@ class Sequencer:
     def new_sequence(self):
         self.pulse_array_list = {}
         for channel in self.channels:
-            idle = Idle(time=10, dt=self.channels_awg_info[channel]['dt'])
+            idle = Idle(time=100, dt=self.channels_awg_info[channel]['dt'])
             idle.generate_pulse_array()
             self.pulse_array_list[channel] = [idle.pulse_array]
 
@@ -116,6 +116,8 @@ class Sequencer:
         return sequence
 
     def end_sequence(self):
+        for channel in self.channels:
+            self.append(channel,Idle(time=100))
         sequence = self.get_sequence()
         sequence = self.rectify_pulse_len(sequence)
 
