@@ -54,19 +54,20 @@ class PulseSequences:
         sequencer.append_idle_to_time('alazar_trig', readout_time_5ns_multiple)
         sequencer.sync_channels_time(self.channels)
 
+        heterodyne_cfg = self.cfg['heterodyne']
 
         sequencer.append('hetero1_I',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567, phase=0,
+                         Square(max_amp=heterodyne_cfg['1']['amp'], flat_len=heterodyne_cfg['1']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['1']['freq'], phase=0,
                                 phase_t0=readout_time_5ns_multiple))
         sequencer.append('hetero1_Q',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567,
+                         Square(max_amp=heterodyne_cfg['1']['amp'], flat_len=heterodyne_cfg['1']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['1']['freq'],
                                 phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
 
         sequencer.append('hetero2_I',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567, phase=0,
+                         Square(max_amp=heterodyne_cfg['2']['amp'], flat_len=heterodyne_cfg['2']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['2']['freq'], phase=0,
                                 phase_t0=readout_time_5ns_multiple))
         sequencer.append('hetero2_Q',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567,
+                         Square(max_amp=heterodyne_cfg['2']['amp'], flat_len=heterodyne_cfg['2']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['2']['freq'],
                                 phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
 
         sequencer.append('alazar_trig', Ones(time=100))
