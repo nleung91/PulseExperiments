@@ -56,9 +56,9 @@ class Experiment:
         waveform_channels = self.hardware_cfg['awg_info']['m8195a']['waveform_channels']
         waveform_matrix = [sequences[channel] for channel in waveform_channels]
 
-        awg = {"period_us": 200, "amplitudes": [1, 1, 1, 1]}
+        awg_info = self.hardware_cfg['awg_info']['m8195a']
 
-        upload_M8195A_sequence(self.m8195a, waveform_matrix, awg, path)
+        upload_M8195A_sequence(self.m8195a, waveform_matrix, awg_info, path)
 
     def awg_prep(self):
         self.m8195a.stop_output()
