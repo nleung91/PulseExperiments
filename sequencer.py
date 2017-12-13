@@ -42,7 +42,11 @@ class Sequencer:
 
     def append_idle_to_time(self, channel, time):
         current_time = self.get_time(channel)
-        extra_time = time - current_time
+        extra_time = time - current_time - 0.0001*self.channels_awg_info[channel]['dt']
+        # the "- delta*self.channels_awg_info[channel]['dt']" is to add numerical stability
+        # when expect time - current_time ==  I (an integer) multiple of clock rate, i.e. expect numpy array with lenth I
+        # if time - current_time is slightly larger than I * dt,
+        # np.arange(0, I * dt + eps, self.dt) will result a numpy array with length I+1
 
         if extra_time > 0:
             self.append(channel, Idle(time=extra_time, dt=self.channels_awg_info[channel]['dt']))
