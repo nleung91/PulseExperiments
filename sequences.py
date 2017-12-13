@@ -27,13 +27,11 @@ class PulseSequences:
 
 
         # pulse params
-        self.drag_pi = {'A': 0.0701200429, 'beta': -0.6998354176626167, 'sigma_len': 3.4692014249759544,
-                        'freq': 4.4995338309483905}
 
-        self.qubit_1_freq = cfg['qubit']['1']['freq']
-        self.qubit_2_freq = cfg['qubit']['2']['freq']
+        self.qubit_freq = {"1": cfg['qubit']['1']['freq'], "2": cfg['qubit']['2']['freq']}
 
-        self.qubit_1_pi = Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_1_freq, phase=0, plot=False)
+        self.qubit_pi = {"1": Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0, plot=False),
+                         "2": Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0, plot=False)}
 
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9],
                            'pi_len': [100, 100, 100, 100, 100, 100, 100, 100]}
@@ -42,37 +40,36 @@ class PulseSequences:
         self.set_parameters(cfg, hardware_cfg)
 
 
-    def readout(self, sequencer):
+    def readout(self, sequencer, on_qubits = None):
+        if on_qubits == None:
+            on_qubits = ["1", "2"]
+
         sequencer.sync_channels_time(self.channels)
 
         readout_time = sequencer.get_time('alazar_trig')
 
         # get readout time to be integer multiple of 5ns (
         # 5ns is the least common multiple between tek1 dt (1/1.2 ns) and alazar dt (1 ns)
-        readout_time_5ns_multiple = np.ceil(readout_time/5) * 5
+        readout_time_5ns_multiple = np.ceil(readout_time / 5) * 5
 
         sequencer.append_idle_to_time('alazar_trig', readout_time_5ns_multiple)
         sequencer.sync_channels_time(self.channels)
 
         heterodyne_cfg = self.cfg['heterodyne']
 
-        sequencer.append('hetero1_I',
-                         Square(max_amp=heterodyne_cfg['1']['amp'], flat_len=heterodyne_cfg['1']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['1']['freq'], phase=0,
-                                phase_t0=readout_time_5ns_multiple))
-        sequencer.append('hetero1_Q',
-                         Square(max_amp=heterodyne_cfg['1']['amp'], flat_len=heterodyne_cfg['1']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['1']['freq'],
-                                phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
+        for qubit_id in on_qubits:
+            sequencer.append('hetero%s_I'%qubit_id,
+                             Square(max_amp=heterodyne_cfg[qubit_id]['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                    ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg[qubit_id]['freq'], phase=0,
+                                    phase_t0=readout_time_5ns_multiple))
+            sequencer.append('hetero%s_Q'%qubit_id,
+                             Square(max_amp=heterodyne_cfg[qubit_id]['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                    ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg[qubit_id]['freq'],
+                                    phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
+            sequencer.append('readout%s_trig'%qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
 
-        sequencer.append('hetero2_I',
-                         Square(max_amp=heterodyne_cfg['2']['amp'], flat_len=heterodyne_cfg['2']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['2']['freq'], phase=0,
-                                phase_t0=readout_time_5ns_multiple))
-        sequencer.append('hetero2_Q',
-                         Square(max_amp=heterodyne_cfg['2']['amp'], flat_len=heterodyne_cfg['2']['length'], ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg['2']['freq'],
-                                phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
 
         sequencer.append('alazar_trig', Ones(time=100))
-        sequencer.append('readout1_trig', Ones(time=250))
-        sequencer.append('readout2_trig', Ones(time=250))
 
         return readout_time
 
@@ -104,14 +101,16 @@ class PulseSequences:
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
-            sequencer.append('charge1',
-                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_1_freq, phase=0,
-                                   plot=False))
-            self.readout(sequencer)
+            for qubit_id in expt_cfg['on_qubits']:
+                sequencer.append('charge%s' %qubit_id,
+                                 Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq[qubit_id], phase=0,
+                                       plot=False))
+
+            self.readout(sequencer, expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=False)
+        return sequencer.complete(plot=True)
 
 
     def t1(self, sequencer):
