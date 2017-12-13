@@ -58,9 +58,7 @@ class Experiment:
 
         awg = {"period_us": 200, "amplitudes": [1, 1, 1, 1]}
 
-        m8195a = M8195A(address='192.168.14.247:5025')
-
-        upload_M8195A_sequence(m8195a, waveform_matrix, awg, path)
+        upload_M8195A_sequence(self.m8195a, waveform_matrix, awg, path)
 
     def awg_prep(self):
         self.m8195a.stop_output()
