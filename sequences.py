@@ -23,7 +23,7 @@ class PulseSequences:
 
         self.awg_info = hardware_cfg['awg_info']
 
-        self.channels_delay = {'readout1_trig': -20, 'readout2_trig': -20, 'alazar_trig': -50}
+        self.channels_delay = hardware_cfg['channels_delay']
 
 
         # pulse params
