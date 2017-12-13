@@ -74,7 +74,6 @@ class Experiment:
         self.adc = Alazar(self.hardware_cfg['alazar'])
 
     def run_experiment(self, sequences, path, name):
-        name = get_next_filename(path,name, suffix='')
 
         self.initiate_tek(name, path, sequences)
         self.initiate_m8195a(path, sequences)
@@ -89,7 +88,8 @@ class Experiment:
 
         averages = 1000
 
-        data_file = os.path.join(path, 'data/'+name+".h5")
+        data_path = os.path.join(path,'data/')
+        data_file = os.path.join(data_path,get_next_filename(data_path,name, suffix='.h5'))
 
 
         expt_data_ch1 = None
