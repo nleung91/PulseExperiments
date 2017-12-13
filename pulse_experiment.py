@@ -22,6 +22,13 @@ class Experiment:
         self.tek = im['TEK']
         self.m8195a = im['M8195A']
 
+        self.rf1 = im['RF1']
+        self.rf2 = im['RF2']
+
+        self.flux1 = im['YOKO1']
+        self.flux2 = im['YOKO3']
+
+
     def initiate_tek(self, name, path, sequences):
         print(self.tek.get_id())
         tek_waveform_channels_num = 4
@@ -73,7 +80,22 @@ class Experiment:
         print("Prep Alazar Card")
         self.adc = Alazar(self.hardware_cfg['alazar'])
 
+    def initiate_readout_rf(self):
+        self.rf1.set_frequency(self.cfg['heterodyne']['1']['lo_freq']*1e9)
+        self.rf2.set_frequency(self.cfg['heterodyne']['2']['lo_freq']*1e9)
+        self.rf1.set_power(self.cfg['heterodyne']['1']['lo_power'])
+        self.rf2.set_power(self.cfg['heterodyne']['2']['lo_power'])
+        self.rf1.set_ext_pulse(mod=True)
+        self.rf2.set_ext_pulse(mod=True)
+
+    def initiate_flux(self):
+        self.flux1.ramp_current(self.cfg['freq_flux']['1']['current_mA'] * 1e-3)
+        self.flux2.ramp_current(self.cfg['freq_flux']['2']['current_mA'] * 1e-3)
+
     def run_experiment(self, sequences, path, name):
+
+        self.initiate_readout_rf()
+        self.initiate_flux()
 
         self.initiate_tek(name, path, sequences)
         self.initiate_m8195a(path, sequences)
@@ -118,23 +140,5 @@ class Experiment:
                 f.add('expt_avg_data_ch2', expt_avg_data_ch2)
                 # f.add('expt_pts', self.expt_pts)
                 f.close()
-
-
-
-
-
-
-
-            # for ii in range(100):
-            # time.sleep(10)
-            #
-            #     self.m8195a.stop_output()
-            #     self.tek.stop()
-            #     self.tek.prep_experiment()
-            #
-            #     time.sleep(1)
-            #
-            #     self.m8195a.start_output()
-            #     self.tek.run()
 
 
