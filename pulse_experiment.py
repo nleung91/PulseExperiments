@@ -2,17 +2,25 @@ from slab import InstrumentManager
 from slab.instruments.awg import write_Tek5014_file
 from slab.instruments.awg.M8195A import upload_M8195A_sequence
 from slab.instruments.awg import M8195A
+from slab.instruments.Alazar import Alazar
 import numpy as np
 import os
+import time
+from tqdm import tqdm
+import visdom
+from slab.datamanagement import SlabFile
+from slab.dataanalysis import get_next_filename
 
 
 class Experiment:
-    def __init__(self, cfg):
+    def __init__(self, cfg, hardware_cfg):
+        self.cfg = cfg
+        self.hardware_cfg = hardware_cfg
+
         im = InstrumentManager()
 
         self.tek = im['TEK']
         self.m8195a = im['M8195A']
-
 
     def initiate_tek(self, name, path, sequences):
         print(self.tek.get_id())
@@ -36,21 +44,37 @@ class Experiment:
         self.tek.load_sequence_file(os.path.join(path, 'sequences/tek.awg'), force_reload=True)
 
 
-
     def initiate_m8195a(self, path, sequences):
         print(self.m8195a.get_id())
         waveform_channels = ['charge1', 'flux1', 'charge2', 'flux2']
         waveform_matrix = [sequences[channel] for channel in waveform_channels]
 
-        awg = {"period_us":200, "amplitudes":[1,1,1,1]}
+        awg = {"period_us": 200, "amplitudes": [1, 1, 1, 1]}
 
         m8195a = M8195A(address='192.168.14.247:5025')
 
-        upload_M8195A_sequence(m8195a,waveform_matrix, awg, path)
+        upload_M8195A_sequence(m8195a, waveform_matrix, awg, path)
 
+    def awg_prep(self):
+        self.m8195a.stop_output()
+        self.tek.stop()
+        self.tek.prep_experiment()
+
+    def awg_run(self):
+        self.m8195a.start_output()
+        time.sleep(1)
+        self.tek.run()
+
+
+    def initiate_alazar(self, sequence_length):
+        self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (self.cfg['readout']['width'] - 1).bit_length()
+        self.hardware_cfg['alazar']['recordsPerBuffer'] = sequence_length
+        self.hardware_cfg['alazar']['recordsPerAcquisition'] = 100
+        print("Prep Alazar Card")
+        self.adc = Alazar(self.hardware_cfg['alazar'])
 
     def run_experiment(self, sequences, path, name):
-
+        name = get_next_filename(path,name, suffix='')
 
         self.initiate_tek(name, path, sequences)
         self.initiate_m8195a(path, sequences)
@@ -58,4 +82,59 @@ class Experiment:
         self.m8195a.start_output()
         self.tek.prep_experiment()
         self.tek.run()
+
+        sequence_length = len(sequences['charge1'])
+
+        self.initiate_alazar(sequence_length)
+
+        averages = 1000
+
+        data_file = os.path.join(path, 'data/'+name+".h5")
+
+
+        expt_data_ch1 = None
+        expt_data_ch2 = None
+        for ii in tqdm(np.arange(max(1, int(averages / 100)))):
+            tpts, ch1_pts, ch2_pts = self.adc.acquire_avg_data_by_record(prep_function=self.awg_prep,
+                                                                         start_function=self.awg_run,
+                                                                         excise=self.cfg['readout']['window'])
+
+            if expt_data_ch1 is None:
+                expt_data_ch1 = ch1_pts
+                expt_data_ch2 = ch2_pts
+            else:
+                expt_data_ch1 = (expt_data_ch1 * ii + ch1_pts) / (ii + 1.0)
+                expt_data_ch2 = (expt_data_ch2 * ii + ch2_pts) / (ii + 1.0)
+
+            expt_avg_data_ch1 = np.mean(expt_data_ch1, 1)
+            expt_avg_data_ch2 = np.mean(expt_data_ch2, 1)
+
+
+            self.slab_file = SlabFile(data_file)
+            with self.slab_file as f:
+                f.add('expt_data_ch1', expt_data_ch1)
+                f.add('expt_avg_data_ch1', expt_avg_data_ch1)
+                f.add('expt_data_ch2', expt_data_ch2)
+                f.add('expt_avg_data_ch2', expt_avg_data_ch2)
+                # f.add('expt_pts', self.expt_pts)
+                f.close()
+
+
+
+
+
+
+
+            # for ii in range(100):
+            # time.sleep(10)
+            #
+            #     self.m8195a.stop_output()
+            #     self.tek.stop()
+            #     self.tek.prep_experiment()
+            #
+            #     time.sleep(1)
+            #
+            #     self.m8195a.start_output()
+            #     self.tek.run()
+
 

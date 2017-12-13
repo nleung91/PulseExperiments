@@ -29,7 +29,7 @@ class PulseSequences:
 
         self.qubit_freq = cfg['qubit']['freq']
 
-        self.qubit_1_pi = Gauss(max_amp=0.5, sigma_len=7, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False)
+        self.qubit_1_pi = Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False)
 
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9],
                            'pi_len': [100, 100, 100, 100, 100, 100, 100, 100]}
@@ -44,17 +44,17 @@ class PulseSequences:
         readout_time = sequencer.get_time('alazar_trig')
 
         sequencer.append('hetero1_I',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.2, phase=0,
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1, phase=0,
                                 plot=False))
         sequencer.append('hetero1_Q',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.2,
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1,
                                 phase=np.pi / 2))
 
         sequencer.append('hetero2_I',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.2, phase=0,
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1, phase=0,
                                 plot=False))
         sequencer.append('hetero2_Q',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.2,
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1,
                                 phase=np.pi / 2))
 
         sequencer.append('alazar_trig', Ones(time=100))
@@ -67,16 +67,15 @@ class PulseSequences:
     def sideband_rabi(self, sequencer):
         # rabi sequences
 
-        for freq in np.arange(3.39, 3.41, 0.005):
+        for rabi_len in np.arange(0, 100, 10.0):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
             sequencer.append('charge1', self.qubit_1_pi)
             sequencer.sync_channels_time(self.channels)
             sequencer.append('flux1',
-                             Square(max_amp=0.5, flat_len=150, ramp_sigma_len=5, cutoff_sigma=2, freq=freq, phase=0,
+                             Square(max_amp=0.5, flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=2.0, phase=0,
                                     plot=False))
-            sequencer.append('flux1', Idle(time=200))
             self.readout(sequencer)
 
             sequencer.end_sequence()
@@ -92,7 +91,7 @@ class PulseSequences:
 
             sequencer.append('m8195a_trig', Ones(time=100))
             sequencer.append('charge1',
-                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0, plot=False))
+                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False))
             self.readout(sequencer)
 
             sequencer.end_sequence()
@@ -133,6 +132,28 @@ class PulseSequences:
                              DRAG(A=0.1, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0,
                                   plot=False))
             self.readout(sequencer)
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(plot=True)
+
+    def alazar_test(self, sequencer):
+        # drag_rabi sequences
+
+        freq_ge = 4.5  # GHz
+        alpha = - 0.125  # GHz
+
+        freq_lambda = (freq_ge + alpha) / freq_ge
+        optimal_beta = freq_lambda ** 2 / (4 * alpha)
+
+        for rabi_len in np.arange(0, 50, 5):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=100))
+            self.readout(sequencer)
+            # sequencer.append('charge1', Idle(time=100))
+            sequencer.append('charge1',
+                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False))
 
             sequencer.end_sequence()
 
