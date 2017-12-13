@@ -32,8 +32,8 @@ class Experiment:
     def initiate_tek(self, name, path, sequences):
         print(self.tek.get_id())
         tek_waveform_channels_num = 4
-        tek_waveform_channels = ['hetero1_I', 'hetero1_Q', 'hetero2_I', 'hetero2_Q']
-        tek_marker_channels = ['alazar_trig', 'readout1_trig', 'readout2_trig', 'm8195a_trig', None, None, None, None]
+        tek_waveform_channels = self.hardware_cfg['awg_info']['tek5014a']['waveform_channels']
+        tek_marker_channels = self.hardware_cfg['awg_info']['tek5014a']['marker_channels']
         tek_waveforms = []
         for channel in tek_waveform_channels:
             if not channel == None:
@@ -53,7 +53,7 @@ class Experiment:
 
     def initiate_m8195a(self, path, sequences):
         print(self.m8195a.get_id())
-        waveform_channels = ['charge1', 'flux1', 'charge2', 'flux2']
+        waveform_channels = self.hardware_cfg['awg_info']['m8195a']['waveform_channels']
         waveform_matrix = [sequences[channel] for channel in waveform_channels]
 
         awg = {"period_us": 200, "amplitudes": [1, 1, 1, 1]}
