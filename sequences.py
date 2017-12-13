@@ -14,6 +14,9 @@ class PulseSequences:
     # channels and awgs
 
     def set_parameters(self, cfg, hardware_cfg):
+        self.cfg = cfg
+        self.hardware_cfg = hardware_cfg
+
         self.channels = hardware_cfg['channels']
 
         self.channels_awg = hardware_cfg['channels_awg']
@@ -27,9 +30,10 @@ class PulseSequences:
         self.drag_pi = {'A': 0.0701200429, 'beta': -0.6998354176626167, 'sigma_len': 3.4692014249759544,
                         'freq': 4.4995338309483905}
 
-        self.qubit_freq = cfg['qubit']['freq']
+        self.qubit_1_freq = cfg['qubit']['1']['freq']
+        self.qubit_2_freq = cfg['qubit']['2']['freq']
 
-        self.qubit_1_pi = Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False)
+        self.qubit_1_pi = Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_1_freq, phase=0, plot=False)
 
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9],
                            'pi_len': [100, 100, 100, 100, 100, 100, 100, 100]}
@@ -43,19 +47,27 @@ class PulseSequences:
 
         readout_time = sequencer.get_time('alazar_trig')
 
+        # get readout time to be integer multiple of 5ns (
+        # 5ns is the least common multiple between tek1 dt (1/1.2 ns) and alazar dt (1 ns)
+        readout_time_5ns_multiple = np.ceil(readout_time/5) * 5
+
+        sequencer.append_idle_to_time('alazar_trig', readout_time_5ns_multiple)
+        sequencer.sync_channels_time(self.channels)
+
+
         sequencer.append('hetero1_I',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1, phase=0,
-                                plot=False))
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567, phase=0,
+                                phase_t0=readout_time_5ns_multiple))
         sequencer.append('hetero1_Q',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1,
-                                phase=np.pi / 2))
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567,
+                                phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
 
         sequencer.append('hetero2_I',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1, phase=0,
-                                plot=False))
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567, phase=0,
+                                phase_t0=readout_time_5ns_multiple))
         sequencer.append('hetero2_Q',
-                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.1,
-                                phase=np.pi / 2))
+                         Square(max_amp=0.5, flat_len=200, ramp_sigma_len=20, cutoff_sigma=2, freq=0.086567,
+                                phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
 
         sequencer.append('alazar_trig', Ones(time=100))
         sequencer.append('readout1_trig', Ones(time=250))
@@ -80,23 +92,25 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
+        return sequencer.complete(plot=False)
 
 
     def rabi(self, sequencer):
         # rabi sequences
+        expt_cfg = self.cfg['rabi']
 
-        for rabi_len in np.arange(0, 10, 1.0):
+        for rabi_len in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
             sequencer.append('charge1',
-                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False))
+                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_1_freq, phase=0,
+                                   plot=False))
             self.readout(sequencer)
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
+        return sequencer.complete(plot=False)
 
 
     def t1(self, sequencer):
@@ -112,30 +126,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
-
-
-    def drag_rabi(self, sequencer):
-        # drag_rabi sequences
-
-        freq_ge = 4.5  # GHz
-        alpha = - 0.125  # GHz
-
-        freq_lambda = (freq_ge + alpha) / freq_ge
-        optimal_beta = freq_lambda ** 2 / (4 * alpha)
-
-        for rabi_len in np.arange(0, 10, 2):
-            sequencer.new_sequence()
-
-            sequencer.append('m8195a_trig', Ones(time=100))
-            sequencer.append('charge1',
-                             DRAG(A=0.1, beta=optimal_beta, sigma_len=rabi_len, cutoff_sigma=2, freq=4.5, phase=0,
-                                  plot=False))
-            self.readout(sequencer)
-
-            sequencer.end_sequence()
-
-        return sequencer.complete(plot=True)
+        return sequencer.complete(plot=False)
 
     def alazar_test(self, sequencer):
         # drag_rabi sequences
@@ -153,7 +144,8 @@ class PulseSequences:
             self.readout(sequencer)
             # sequencer.append('charge1', Idle(time=100))
             sequencer.append('charge1',
-                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq, phase=0, plot=False))
+                             Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq, phase=0,
+                                   plot=False))
 
             sequencer.end_sequence()
 

@@ -61,13 +61,14 @@ class Gauss(Pulse):
 
 
 class Square(Pulse):
-    def __init__(self, max_amp, flat_len, ramp_sigma_len, cutoff_sigma, freq, phase, dt=None, plot=False):
+    def __init__(self, max_amp, flat_len, ramp_sigma_len, cutoff_sigma, freq, phase, phase_t0 = 0, dt=None, plot=False):
         self.max_amp = max_amp
         self.flat_len = flat_len
         self.ramp_sigma_len = ramp_sigma_len
         self.cutoff_sigma = cutoff_sigma
         self.freq = freq
         self.phase = phase
+        self.phase_t0 = phase_t0
         self.dt = dt
         self.plot = plot
 
@@ -92,7 +93,7 @@ class Square(Pulse):
                     2 * self.ramp_sigma_len ** 2))  # trailing edge
         )
 
-        pulse_array = pulse_array * np.cos(2 * np.pi * self.freq * self.t_array + self.phase)
+        pulse_array = pulse_array * np.cos(2 * np.pi * self.freq * (self.t_array - self.phase_t0) + self.phase)
 
         return pulse_array
 
