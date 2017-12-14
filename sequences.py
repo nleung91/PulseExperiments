@@ -13,8 +13,9 @@ import visdom
 class PulseSequences:
     # channels and awgs
 
-    def set_parameters(self, cfg, hardware_cfg):
-        self.cfg = cfg
+    def set_parameters(self, quantum_device_cfg ,experiment_cfg, hardware_cfg):
+        self.quantum_device_cfg = quantum_device_cfg
+        self.experiment_cfg = experiment_cfg
         self.hardware_cfg = hardware_cfg
 
         self.channels = hardware_cfg['channels']
@@ -28,7 +29,7 @@ class PulseSequences:
 
         # pulse params
 
-        self.qubit_freq = {"1": cfg['qubit']['1']['freq'], "2": cfg['qubit']['2']['freq']}
+        self.qubit_freq = {"1": self.quantum_device_cfg['qubit']['1']['freq'], "2": self.quantum_device_cfg['qubit']['2']['freq']}
 
         self.qubit_pi = {"1": Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0, plot=False),
                          "2": Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0, plot=False)}
@@ -36,8 +37,8 @@ class PulseSequences:
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9],
                            'pi_len': [100, 100, 100, 100, 100, 100, 100, 100]}
 
-    def __init__(self, cfg, hardware_cfg):
-        self.set_parameters(cfg, hardware_cfg)
+    def __init__(self, quantum_device_cfg ,experiment_cfg, hardware_cfg):
+        self.set_parameters(quantum_device_cfg , experiment_cfg, hardware_cfg)
 
 
     def readout(self, sequencer, on_qubits = None):
@@ -55,7 +56,7 @@ class PulseSequences:
         sequencer.append_idle_to_time('alazar_trig', readout_time_5ns_multiple)
         sequencer.sync_channels_time(self.channels)
 
-        heterodyne_cfg = self.cfg['heterodyne']
+        heterodyne_cfg = self.quantum_device_cfg['heterodyne']
 
         for qubit_id in on_qubits:
             sequencer.append('hetero%s_I'%qubit_id,
@@ -95,7 +96,7 @@ class PulseSequences:
 
     def rabi(self, sequencer):
         # rabi sequences
-        expt_cfg = self.cfg['rabi']
+        expt_cfg = self.experiment_cfg['rabi']
 
         for rabi_len in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
             sequencer.new_sequence()
@@ -115,8 +116,8 @@ class PulseSequences:
 
     def vacuum_rabi(self, sequencer):
         # vacuum rabi sequences
-        expt_cfg = self.cfg['vacuum_rabi']
-        heterodyne_cfg = self.cfg['heterodyne']
+        expt_cfg = self.experiment_cfg['vacuum_rabi']
+        heterodyne_cfg = self.quantum_device_cfg['heterodyne']
 
         for iq_freq in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
             sequencer.new_sequence()
@@ -142,7 +143,7 @@ class PulseSequences:
 
     def t1(self, sequencer):
         # t1 sequences
-        expt_cfg = self.cfg['t1']
+        expt_cfg = self.experiment_cfg['t1']
 
         for t1_len in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
             sequencer.new_sequence()

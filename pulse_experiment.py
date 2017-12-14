@@ -14,8 +14,9 @@ import json
 
 
 class Experiment:
-    def __init__(self, cfg, hardware_cfg):
-        self.cfg = cfg
+    def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
+        self.quantum_device_cfg = quantum_device_cfg
+        self.experiment_cfg = experiment_cfg
         self.hardware_cfg = hardware_cfg
 
         im = InstrumentManager()
@@ -73,23 +74,23 @@ class Experiment:
 
 
     def initiate_alazar(self, sequence_length):
-        self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (self.cfg['alazar_readout']['width'] - 1).bit_length()
+        self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (self.quantum_device_cfg['alazar_readout']['width'] - 1).bit_length()
         self.hardware_cfg['alazar']['recordsPerBuffer'] = sequence_length
         self.hardware_cfg['alazar']['recordsPerAcquisition'] = sequence_length*100
         print("Prep Alazar Card")
         self.adc = Alazar(self.hardware_cfg['alazar'])
 
     def initiate_readout_rf(self):
-        self.rf1.set_frequency(self.cfg['heterodyne']['1']['lo_freq']*1e9)
-        self.rf2.set_frequency(self.cfg['heterodyne']['2']['lo_freq']*1e9)
-        self.rf1.set_power(self.cfg['heterodyne']['1']['lo_power'])
-        self.rf2.set_power(self.cfg['heterodyne']['2']['lo_power'])
+        self.rf1.set_frequency(self.quantum_device_cfg['heterodyne']['1']['lo_freq']*1e9)
+        self.rf2.set_frequency(self.quantum_device_cfg['heterodyne']['2']['lo_freq']*1e9)
+        self.rf1.set_power(self.quantum_device_cfg['heterodyne']['1']['lo_power'])
+        self.rf2.set_power(self.quantum_device_cfg['heterodyne']['2']['lo_power'])
         self.rf1.set_ext_pulse(mod=True)
         self.rf2.set_ext_pulse(mod=True)
 
     def initiate_flux(self):
-        self.flux1.ramp_current(self.cfg['freq_flux']['1']['current_mA'] * 1e-3)
-        self.flux2.ramp_current(self.cfg['freq_flux']['2']['current_mA'] * 1e-3)
+        self.flux1.ramp_current(self.quantum_device_cfg['freq_flux']['1']['current_mA'] * 1e-3)
+        self.flux2.ramp_current(self.quantum_device_cfg['freq_flux']['2']['current_mA'] * 1e-3)
 
     def run_experiment(self, sequences, path, name):
 
@@ -107,14 +108,15 @@ class Experiment:
 
         self.initiate_alazar(sequence_length)
 
-        averages = self.cfg[name]['averages']
+        averages = self.experiment_cfg[name]['averages']
 
         data_path = os.path.join(path,'data/')
         data_file = os.path.join(data_path,get_next_filename(data_path,name, suffix='.h5'))
 
         self.slab_file = SlabFile(data_file)
         with self.slab_file as f:
-            f.attrs['cfg'] = json.dumps(self.cfg)
+            f.attrs['quantum_device_cfg'] = json.dumps(self.quantum_device_cfg)
+            f.attrs['experiment_cfg'] = json.dumps(self.experiment_cfg)
             f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
             f.close()
 
@@ -124,7 +126,7 @@ class Experiment:
         for ii in tqdm(np.arange(max(1, int(averages / 100)))):
             tpts, ch1_pts, ch2_pts = self.adc.acquire_avg_data_by_record(prep_function=self.awg_prep,
                                                                          start_function=self.awg_run,
-                                                                         excise=self.cfg['alazar_readout']['window'])
+                                                                         excise=self.quantum_device_cfg['alazar_readout']['window'])
 
             if expt_data_ch1 is None:
                 expt_data_ch1 = ch1_pts
@@ -143,7 +145,6 @@ class Experiment:
                 f.add('expt_avg_data_ch1', expt_avg_data_ch1)
                 f.add('expt_data_ch2', expt_data_ch2)
                 f.add('expt_avg_data_ch2', expt_avg_data_ch2)
-                # f.add('expt_pts', self.expt_pts)
                 f.close()
 
 
