@@ -176,7 +176,10 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
+        pi_calibration_info = {'pi_calibration':True,'expt_cfg':expt_cfg, 'qubit_pi':self.qubit_pi,
+                               'readout':self.readout}
+
+        return sequencer.complete(pi_calibration_info, plot=True)
 
         # for idle_len in np.arange(0, 100, 20):
         #     sequencer.new_sequence()
