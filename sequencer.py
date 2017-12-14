@@ -123,25 +123,21 @@ class Sequencer:
 
         self.multiple_sequences.append(sequence)
 
-    def complete(self, pi_calibration_info = None, plot=True):
+    def complete(self, sequences, plot=True):
 
-        if not pi_calibration_info == None:
-            if pi_calibration_info['pi_calibration']:
-                expt_cfg = pi_calibration_info['expt_cfg']
-                qubit_pi = pi_calibration_info['qubit_pi']
-                readout = pi_calibration_info['readout']
+        if sequences.expt_cfg.get('pi_calibration', False):
 
-                self.new_sequence()
-                self.append('m8195a_trig', Ones(time=100))
-                readout(self, expt_cfg['on_qubits'])
-                self.end_sequence()
+            self.new_sequence()
+            self.append('m8195a_trig', Ones(time=100))
+            sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
+            self.end_sequence()
 
-                self.new_sequence()
-                self.append('m8195a_trig', Ones(time=100))
-                for qubit_id in expt_cfg['on_qubits']:
-                    self.append('charge%s' %qubit_id, qubit_pi[qubit_id])
-                readout(self, expt_cfg['on_qubits'])
-                self.end_sequence()
+            self.new_sequence()
+            self.append('m8195a_trig', Ones(time=100))
+            for qubit_id in sequences.expt_cfg['on_qubits']:
+                self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])
+            sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
+            self.end_sequence()
 
 
         self.equalize_sequences()

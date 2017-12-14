@@ -163,23 +163,22 @@ class PulseSequences:
 
     def t1(self, sequencer):
         # t1 sequences
-        expt_cfg = self.experiment_cfg['t1']
 
-        for t1_len in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
+        for t1_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
-            for qubit_id in expt_cfg['on_qubits']:
+            for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' %qubit_id, self.qubit_pi[qubit_id])
                 sequencer.append('charge%s' %qubit_id, Idle(time=t1_len))
-            self.readout(sequencer, expt_cfg['on_qubits'])
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        pi_calibration_info = {'pi_calibration':True,'expt_cfg':expt_cfg, 'qubit_pi':self.qubit_pi,
+        pi_calibration_info = {'pi_calibration':True,'expt_cfg':self.expt_cfg, 'qubit_pi':self.qubit_pi,
                                'readout':self.readout}
 
-        return sequencer.complete(pi_calibration_info, plot=True)
+        return sequencer.complete(self, plot=True)
 
         # for idle_len in np.arange(0, 100, 20):
         #     sequencer.new_sequence()
@@ -222,6 +221,7 @@ class PulseSequences:
         vis.close()
 
         sequencer = Sequencer(self.channels, self.channels_awg, self.awg_info, self.channels_delay)
+        self.expt_cfg = self.experiment_cfg[experiment]
 
         multiple_sequences = eval('self.' + experiment)(sequencer)
 
