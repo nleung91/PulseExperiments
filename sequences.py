@@ -93,6 +93,26 @@ class PulseSequences:
 
         return sequencer.complete(plot=False)
 
+    def pulse_probe(self, sequencer):
+        # pulse_probe sequences
+        expt_cfg = self.experiment_cfg['pulse_probe']
+
+        for qubit_freq in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=100))
+            for qubit_id in expt_cfg['on_qubits']:
+                sequencer.append('charge%s' %qubit_id,
+                                 Square(max_amp=expt_cfg['pulse_amp'], flat_len=expt_cfg['pulse_length'],
+                                        ramp_sigma_len=20, cutoff_sigma=2, freq=qubit_freq, phase=0,
+                                        phase_t0=0))
+
+            self.readout(sequencer, expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(plot=True)
+
 
     def rabi(self, sequencer):
         # rabi sequences
