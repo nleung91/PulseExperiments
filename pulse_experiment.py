@@ -10,6 +10,7 @@ from tqdm import tqdm
 import visdom
 from slab.datamanagement import SlabFile
 from slab.dataanalysis import get_next_filename
+import json
 
 
 class Experiment:
@@ -74,7 +75,7 @@ class Experiment:
     def initiate_alazar(self, sequence_length):
         self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (self.cfg['alazar_readout']['width'] - 1).bit_length()
         self.hardware_cfg['alazar']['recordsPerBuffer'] = sequence_length
-        self.hardware_cfg['alazar']['recordsPerAcquisition'] = 100
+        self.hardware_cfg['alazar']['recordsPerAcquisition'] = sequence_length*100
         print("Prep Alazar Card")
         self.adc = Alazar(self.hardware_cfg['alazar'])
 
@@ -110,6 +111,12 @@ class Experiment:
 
         data_path = os.path.join(path,'data/')
         data_file = os.path.join(data_path,get_next_filename(data_path,name, suffix='.h5'))
+
+        self.slab_file = SlabFile(data_file)
+        with self.slab_file as f:
+            f.attrs['cfg'] = json.dumps(self.cfg)
+            f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
+            f.close()
 
 
         expt_data_ch1 = None
