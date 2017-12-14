@@ -157,6 +157,54 @@ class PulseSequences:
 
         return sequencer.complete(self,plot=True)
 
+    def histogram(self, sequencer):
+        # vacuum rabi sequences
+        heterodyne_cfg = self.quantum_device_cfg['heterodyne']
+
+        for iq_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+
+            # no pi pulse
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('alazar_trig', Ones(time=100))
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('hetero%s_I'%qubit_id,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq, phase=0,
+                                        phase_t0=0))
+                sequencer.append('hetero%s_Q'%qubit_id,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq,
+                                        phase=np.pi / 2, phase_t0=0))
+                sequencer.append('readout%s_trig'%qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
+
+
+            sequencer.end_sequence()
+
+            # with pi pulse
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('alazar_trig', Ones(time=100))
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' %qubit_id, self.qubit_pi[qubit_id])
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('hetero%s_I'%qubit_id,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq, phase=0,
+                                        phase_t0=0))
+                sequencer.append('hetero%s_Q'%qubit_id,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
+                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq,
+                                        phase=np.pi / 2, phase_t0=0))
+                sequencer.append('readout%s_trig'%qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
+
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self,plot=True)
+
 
     def t1(self, sequencer):
         # t1 sequences
