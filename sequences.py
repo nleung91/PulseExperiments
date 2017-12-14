@@ -125,7 +125,7 @@ class PulseSequences:
                                  Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq[qubit_id], phase=0,
                                        plot=False))
 
-            self.readout(sequencer, expt_cfg['on_qubits'])
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
