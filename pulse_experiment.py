@@ -73,16 +73,18 @@ class Experiment:
         self.tek.run()
 
 
-    def initiate_alazar(self, sequence_length):
-        self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (self.quantum_device_cfg['alazar_readout']['width'] - 1).bit_length()
+    def initiate_alazar(self, sequence_length, averages):
+        self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (
+        self.quantum_device_cfg['alazar_readout']['width'] - 1).bit_length()
         self.hardware_cfg['alazar']['recordsPerBuffer'] = sequence_length
-        self.hardware_cfg['alazar']['recordsPerAcquisition'] = sequence_length*100
+        self.hardware_cfg['alazar']['recordsPerAcquisition'] = int(
+            sequence_length * min(averages, 100))
         print("Prep Alazar Card")
         self.adc = Alazar(self.hardware_cfg['alazar'])
 
     def initiate_readout_rf(self):
-        self.rf1.set_frequency(self.quantum_device_cfg['heterodyne']['1']['lo_freq']*1e9)
-        self.rf2.set_frequency(self.quantum_device_cfg['heterodyne']['2']['lo_freq']*1e9)
+        self.rf1.set_frequency(self.quantum_device_cfg['heterodyne']['1']['lo_freq'] * 1e9)
+        self.rf2.set_frequency(self.quantum_device_cfg['heterodyne']['2']['lo_freq'] * 1e9)
         self.rf1.set_power(self.quantum_device_cfg['heterodyne']['1']['lo_power'])
         self.rf2.set_power(self.quantum_device_cfg['heterodyne']['2']['lo_power'])
         self.rf1.set_ext_pulse(mod=True)
@@ -98,7 +100,7 @@ class Experiment:
         f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
         f.close()
 
-    def run_experiment(self, sequences, path, name, seq_data_file = None):
+    def run_experiment(self, sequences, path, name, seq_data_file=None):
 
         self.initiate_readout_rf()
         self.initiate_flux()
@@ -112,13 +114,15 @@ class Experiment:
 
         sequence_length = len(sequences['charge1'])
 
-        self.initiate_alazar(sequence_length)
-
         averages = self.experiment_cfg[name]['averages']
 
+        self.initiate_alazar(sequence_length, averages)
+
+
+
         if seq_data_file == None:
-            data_path = os.path.join(path,'data/')
-            data_file = os.path.join(data_path,get_next_filename(data_path,name, suffix='.h5'))
+            data_path = os.path.join(path, 'data/')
+            data_file = os.path.join(data_path, get_next_filename(data_path, name, suffix='.h5'))
             self.slab_file = SlabFile(data_file)
             with self.slab_file as f:
                 self.save_cfg_info(f)
@@ -132,7 +136,9 @@ class Experiment:
         for ii in tqdm(np.arange(max(1, int(averages / 100)))):
             tpts, ch1_pts, ch2_pts = self.adc.acquire_avg_data_by_record(prep_function=self.awg_prep,
                                                                          start_function=self.awg_run,
-                                                                         excise=self.quantum_device_cfg['alazar_readout']['window'])
+                                                                         excise=
+                                                                         self.quantum_device_cfg['alazar_readout'][
+                                                                             'window'])
 
             if expt_data_ch1 is None:
                 expt_data_ch1 = ch1_pts
