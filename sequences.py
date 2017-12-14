@@ -95,34 +95,32 @@ class PulseSequences:
 
     def pulse_probe(self, sequencer):
         # pulse_probe sequences
-        expt_cfg = self.experiment_cfg['pulse_probe']
 
-        for qubit_freq in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
+        for qubit_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
-            for qubit_id in expt_cfg['on_qubits']:
+            for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' %qubit_id,
-                                 Square(max_amp=expt_cfg['pulse_amp'], flat_len=expt_cfg['pulse_length'],
+                                 Square(max_amp=self.expt_cfg['pulse_amp'], flat_len=self.expt_cfg['pulse_length'],
                                         ramp_sigma_len=20, cutoff_sigma=2, freq=qubit_freq, phase=0,
                                         phase_t0=0))
 
-            self.readout(sequencer, expt_cfg['on_qubits'])
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
+        return sequencer.complete(self,plot=True)
 
 
     def rabi(self, sequencer):
         # rabi sequences
-        expt_cfg = self.experiment_cfg['rabi']
 
-        for rabi_len in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
-            for qubit_id in expt_cfg['on_qubits']:
+            for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' %qubit_id,
                                  Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq[qubit_id], phase=0,
                                        plot=False))
@@ -131,20 +129,19 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
+        return sequencer.complete(self,plot=True)
 
 
     def vacuum_rabi(self, sequencer):
         # vacuum rabi sequences
-        expt_cfg = self.experiment_cfg['vacuum_rabi']
         heterodyne_cfg = self.quantum_device_cfg['heterodyne']
 
-        for iq_freq in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
+        for iq_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
             sequencer.append('alazar_trig', Ones(time=100))
-            for qubit_id in expt_cfg['on_qubits']:
+            for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('hetero%s_I'%qubit_id,
                                  Square(max_amp=heterodyne_cfg[qubit_id]['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
                                         ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq, phase=0,
@@ -158,7 +155,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
+        return sequencer.complete(self,plot=True)
 
 
     def t1(self, sequencer):
@@ -213,7 +210,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=True)
+        return sequencer.complete(self,plot=True)
 
 
     def get_experiment_sequences(self, experiment):
