@@ -92,7 +92,13 @@ class Experiment:
         self.flux1.ramp_current(self.quantum_device_cfg['freq_flux']['1']['current_mA'] * 1e-3)
         self.flux2.ramp_current(self.quantum_device_cfg['freq_flux']['2']['current_mA'] * 1e-3)
 
-    def run_experiment(self, sequences, path, name):
+    def save_cfg_info(self, f):
+        f.attrs['quantum_device_cfg'] = json.dumps(self.quantum_device_cfg)
+        f.attrs['experiment_cfg'] = json.dumps(self.experiment_cfg)
+        f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
+        f.close()
+
+    def run_experiment(self, sequences, path, name, seq_data_file = None):
 
         self.initiate_readout_rf()
         self.initiate_flux()
@@ -110,16 +116,16 @@ class Experiment:
 
         averages = self.experiment_cfg[name]['averages']
 
-        data_path = os.path.join(path,'data/')
-        data_file = os.path.join(data_path,get_next_filename(data_path,name, suffix='.h5'))
-
-        self.slab_file = SlabFile(data_file)
-        with self.slab_file as f:
-            f.attrs['quantum_device_cfg'] = json.dumps(self.quantum_device_cfg)
-            f.attrs['experiment_cfg'] = json.dumps(self.experiment_cfg)
-            f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
-            f.close()
-
+        if seq_data_file == None:
+            data_path = os.path.join(path,'data/')
+            data_file = os.path.join(data_path,get_next_filename(data_path,name, suffix='.h5'))
+            self.slab_file = SlabFile(data_file)
+            with self.slab_file as f:
+                self.save_cfg_info(f)
+        else:
+            self.slab_file = SlabFile(seq_data_file)
+            with self.slab_file as f:
+                self.save_cfg_info(f)
 
         expt_data_ch1 = None
         expt_data_ch2 = None
@@ -138,13 +144,19 @@ class Experiment:
             expt_avg_data_ch1 = np.mean(expt_data_ch1, 1)
             expt_avg_data_ch2 = np.mean(expt_data_ch2, 1)
 
+            if seq_data_file == None:
+                self.slab_file = SlabFile(data_file)
+                with self.slab_file as f:
+                    f.add('expt_data_ch1', expt_data_ch1)
+                    f.add('expt_avg_data_ch1', expt_avg_data_ch1)
+                    f.add('expt_data_ch2', expt_data_ch2)
+                    f.add('expt_avg_data_ch2', expt_avg_data_ch2)
+                    f.close()
 
-            self.slab_file = SlabFile(data_file)
+        if not seq_data_file == None:
+            self.slab_file = SlabFile(seq_data_file)
             with self.slab_file as f:
-                f.add('expt_data_ch1', expt_data_ch1)
-                f.add('expt_avg_data_ch1', expt_avg_data_ch1)
-                f.add('expt_data_ch2', expt_data_ch2)
-                f.add('expt_avg_data_ch2', expt_avg_data_ch2)
+                f.append_line('expt_avg_data_ch1', expt_avg_data_ch1)
+                f.append_line('expt_avg_data_ch2', expt_avg_data_ch2)
                 f.close()
-
 
