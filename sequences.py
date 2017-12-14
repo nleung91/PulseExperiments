@@ -112,6 +112,7 @@ class PulseSequences:
 
         return sequencer.complete(plot=True)
 
+
     def vacuum_rabi(self, sequencer):
         # vacuum rabi sequences
         expt_cfg = self.cfg['vacuum_rabi']
@@ -141,18 +142,32 @@ class PulseSequences:
 
     def t1(self, sequencer):
         # t1 sequences
+        expt_cfg = self.cfg['t1']
 
-        for idle_len in np.arange(0, 100, 20):
+        for t1_len in np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step']):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
-            sequencer.append('charge1', self.qubit_1_pi)
-            sequencer.append('charge1', Idle(time=idle_len))
-            self.readout(sequencer)
+            for qubit_id in expt_cfg['on_qubits']:
+                sequencer.append('charge%s' %qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s' %qubit_id, Idle(time=t1_len))
+            self.readout(sequencer, expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=False)
+        return sequencer.complete(plot=True)
+
+        # for idle_len in np.arange(0, 100, 20):
+        #     sequencer.new_sequence()
+        #
+        #     sequencer.append('m8195a_trig', Ones(time=100))
+        #     sequencer.append('charge1', self.qubit_pi["1"])
+        #     sequencer.append('charge1', Idle(time=idle_len))
+        #     self.readout(sequencer)
+        #
+        #     sequencer.end_sequence()
+        #
+        # return sequencer.complete(plot=True)
 
     def alazar_test(self, sequencer):
         # drag_rabi sequences
