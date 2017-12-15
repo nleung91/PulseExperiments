@@ -155,7 +155,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self,plot=True)
+        return sequencer.complete(self,plot=False)
 
     def histogram(self, sequencer):
         # vacuum rabi sequences
