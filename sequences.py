@@ -87,24 +87,25 @@ class PulseSequences:
 
         return readout_time
 
-
-    def sideband_rabi(self, sequencer):
+    def sideband_rabi_freq(self, sequencer):
         # rabi sequences
-
-        for rabi_len in np.arange(0, 100, 10.0):
+        rabi_len = self.expt_cfg['rabi_len']
+        for rabi_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
             sequencer.append('m8195a_trig', Ones(time=100))
-            sequencer.append('charge1', self.qubit_1_pi)
-            sequencer.sync_channels_time(self.channels)
-            sequencer.append('flux1',
-                             Square(max_amp=0.5, flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=2.0, phase=0,
-                                    plot=False))
-            self.readout(sequencer)
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge1', self.qubit_pi[qubit_id])
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('flux%s'%qubit_id,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=rabi_freq, phase=0,
+                                        plot=False))
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(plot=False)
+        return sequencer.complete(self,plot=False)
+
 
     def pulse_probe(self, sequencer):
         # pulse_probe sequences
