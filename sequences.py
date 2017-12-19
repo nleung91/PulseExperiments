@@ -31,7 +31,7 @@ class PulseSequences:
 
         self.qubit_freq = {"1": self.quantum_device_cfg['qubit']['1']['freq'], "2": self.quantum_device_cfg['qubit']['2']['freq']}
 
-        self.qubit_pi = {"1": Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0, plot=False),
+        self.qubit_pi = {"1": Gauss(max_amp=1.0, sigma_len=18, cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0, plot=False),
                          "2": Gauss(max_amp=0.5, sigma_len=5, cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0, plot=False)}
 
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9],
@@ -110,7 +110,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self,plot=True)
+        return sequencer.complete(self,plot=False)
 
 
     def rabi(self, sequencer):
@@ -122,14 +122,16 @@ class PulseSequences:
             sequencer.append('m8195a_trig', Ones(time=100))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' %qubit_id,
-                                 Gauss(max_amp=0.5, sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq[qubit_id], phase=0,
+                                 Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len, cutoff_sigma=2, freq=self.qubit_freq[qubit_id], phase=0,
                                        plot=False))
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self,plot=True)
+        return sequencer.complete(self,plot=False)
+
+
 
 
     def vacuum_rabi(self, sequencer):
@@ -223,7 +225,7 @@ class PulseSequences:
         pi_calibration_info = {'pi_calibration':True,'expt_cfg':self.expt_cfg, 'qubit_pi':self.qubit_pi,
                                'readout':self.readout}
 
-        return sequencer.complete(self, plot=True)
+        return sequencer.complete(self, plot=False)
 
         # for idle_len in np.arange(0, 100, 20):
         #     sequencer.new_sequence()
