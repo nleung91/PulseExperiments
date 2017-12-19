@@ -27,8 +27,8 @@ class Experiment:
         self.rf1 = im['RF1']
         self.rf2 = im['RF2']
 
-        self.flux1 = im['YOKO1']
-        self.flux2 = im['YOKO3']
+        self.flux1 = im['YOKO3']
+        self.flux2 = im['YOKO1']
 
 
     def initiate_tek(self, name, path, sequences):
