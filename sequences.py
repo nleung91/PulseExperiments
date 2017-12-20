@@ -32,8 +32,8 @@ class PulseSequences:
         self.qubit_freq = {"1": self.quantum_device_cfg['qubit']['1']['freq'],
                            "2": self.quantum_device_cfg['qubit']['2']['freq']}
 
-        self.qubit_ef_freq = {"1": self.quantum_device_cfg['qubit']['1']['freq']+self.quantum_device_cfg['anharmonicity']['1']['freq'],
-                           "2": self.quantum_device_cfg['qubit']['2']['freq']+self.quantum_device_cfg['anharmonicity']['2']['freq']}
+        self.qubit_ef_freq = {"1": self.quantum_device_cfg['qubit']['1']['freq']+self.quantum_device_cfg['1']['qubit']['anharmonicity'],
+                           "2": self.quantum_device_cfg['qubit']['2']['freq']+self.quantum_device_cfg['2']['qubit']['anharmonicity']}
 
         self.pulse_info = self.quantum_device_cfg['pulse_info']
 
