@@ -13,6 +13,7 @@ from slab.dataanalysis import get_next_filename
 import json
 from slab.experiments.PulseExperiments.get_data import get_iq_data
 
+
 class Experiment:
     def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
         self.quantum_device_cfg = quantum_device_cfg
@@ -100,7 +101,79 @@ class Experiment:
         f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
         f.close()
 
-    def run_experiment(self, sequences, path, name, seq_data_file=None, **kwargs):
+    def get_singleshot_data(self, data_file):
+        avgPerAcquisition = int(min(self.expt_cfg['averages'], 100))
+        numAcquisition = int(np.ceil(self.expt_cfg['averages'] / 100))
+        het_IFreqList = self.quantum_device_cfg['heterodyne']['1']['freq_list'] + \
+                        self.quantum_device_cfg['heterodyne']['2']['freq_list']
+        single_data1_list = []
+        single_data2_list = []
+        for ii in tqdm(np.arange(numAcquisition)):
+            # single_data1/2: index: (hetero_freqs, cos/sin, all_seqs)
+            single_data1, single_data2, single_record1, single_record2 = \
+                self.adc.acquire_singleshot_heterodyne_multitone_data_2(het_IFreqList, prep_function=self.awg_prep,
+                                                                        start_function=self.awg_run,
+                                                                        excise=
+                                                                        self.quantum_device_cfg['alazar_readout'][
+                                                                            'window'])
+            single_data1_list.append(single_data1)
+            single_data2_list.append(single_data2)
+        self.slab_file = SlabFile(data_file)
+        with self.slab_file as f:
+            f.add('single_data1', np.array(single_data1_list))
+            f.add('single_data2', np.array(single_data2_list))
+            f.append_line('single_record1', single_record1)
+            f.append_line('single_record2', single_record2)
+            f.close()
+
+    def get_avg_data(self, averages, data_file, seq_data_file):
+        expt_data_ch1 = None
+        expt_data_ch2 = None
+        for ii in tqdm(np.arange(max(1, int(averages / 100)))):
+            tpts, ch1_pts, ch2_pts = self.adc.acquire_avg_data_by_record(prep_function=self.awg_prep,
+                                                                         start_function=self.awg_run,
+                                                                         excise=
+                                                                         self.quantum_device_cfg['alazar_readout'][
+                                                                             'window'])
+
+            if expt_data_ch1 is None:
+                expt_data_ch1 = ch1_pts
+                expt_data_ch2 = ch2_pts
+            else:
+                expt_data_ch1 = (expt_data_ch1 * ii + ch1_pts) / (ii + 1.0)
+                expt_data_ch2 = (expt_data_ch2 * ii + ch2_pts) / (ii + 1.0)
+
+            data_1_cos_list, data_1_sin_list, data_1_list = get_iq_data(expt_data_ch1,
+                                                                        het_freq=
+                                                                        self.quantum_device_cfg['heterodyne']['1'][
+                                                                            'freq'],
+                                                                        td=0,
+                                                                        pi_cal=self.expt_cfg.get('pi_calibration',
+                                                                                                 False))
+            data_2_cos_list, data_2_sin_list, data_2_list = get_iq_data(expt_data_ch1,
+                                                                        het_freq=
+                                                                        self.quantum_device_cfg['heterodyne']['2'][
+                                                                            'freq'],
+                                                                        td=0,
+                                                                        pi_cal=self.expt_cfg.get('pi_calibration',
+                                                                                                 False))
+
+            if seq_data_file == None:
+                self.slab_file = SlabFile(data_file)
+                with self.slab_file as f:
+                    f.add('expt_data_ch1', expt_data_ch1)
+                    f.add('expt_avg_data_ch1', data_1_list)
+                    f.add('expt_data_ch2', expt_data_ch2)
+                    f.add('expt_avg_data_ch2', data_2_list)
+                    f.close()
+        if not seq_data_file == None:
+            self.slab_file = SlabFile(data_file)
+            with self.slab_file as f:
+                f.append_line('expt_avg_data_ch1', data_1_list)
+                f.append_line('expt_avg_data_ch2', data_2_list)
+                f.close()
+
+    def run_experiment(self, sequences, path, name, seq_data_file=None):
 
         self.initiate_readout_rf()
         self.initiate_flux()
@@ -130,81 +203,9 @@ class Experiment:
             self.save_cfg_info(f)
 
         if self.expt_cfg.get('singleshot', False):
-            avgPerAcquisition = int(min(self.expt_cfg['averages'], 100))
-            numAcquisition = int(np.ceil(self.expt_cfg['averages'] / 100))
-
-            het_IFreqList = kwargs.get('het_freq_list',
-                                       self.quantum_device_cfg['heterodyne']['1']['freq_list'] +
-                                       self.quantum_device_cfg['heterodyne']['2']['freq_list'])
-
-            single_data1_list = []
-            single_data2_list = []
-
-            for ii in tqdm(np.arange(numAcquisition)):
-                # single_data1/2: index: (hetero_freqs, cos/sin, all_seqs)
-                single_data1, single_data2, single_record1, single_record2 = \
-                    self.adc.acquire_singleshot_heterodyne_multitone_data_2(het_IFreqList, prep_function=self.awg_prep,
-                                                                            start_function=self.awg_run,
-                                                                            excise=
-                                                                            self.quantum_device_cfg['alazar_readout'][
-                                                                                'window'])
-                single_data1_list.append(single_data1)
-                single_data2_list.append(single_data2)
-
-            self.slab_file = SlabFile(data_file)
-            with self.slab_file as f:
-                f.add('single_data1', np.array(single_data1_list))
-                f.add('single_data2', np.array(single_data2_list))
-                f.append_line('single_record1', single_record1)
-                f.append_line('single_record2', single_record2)
-                f.close()
-
-
+            self.get_singleshot_data(data_file)
         else:
-            expt_data_ch1 = None
-            expt_data_ch2 = None
-            for ii in tqdm(np.arange(max(1, int(averages / 100)))):
-                tpts, ch1_pts, ch2_pts = self.adc.acquire_avg_data_by_record(prep_function=self.awg_prep,
-                                                                             start_function=self.awg_run,
-                                                                             excise=
-                                                                             self.quantum_device_cfg['alazar_readout'][
-                                                                                 'window'])
-
-                if expt_data_ch1 is None:
-                    expt_data_ch1 = ch1_pts
-                    expt_data_ch2 = ch2_pts
-                else:
-                    expt_data_ch1 = (expt_data_ch1 * ii + ch1_pts) / (ii + 1.0)
-                    expt_data_ch2 = (expt_data_ch2 * ii + ch2_pts) / (ii + 1.0)
-
-                data_1_cos_list, data_1_sin_list, data_1_list = get_iq_data(expt_data_ch1,
-                                                                      het_freq=
-                                                                      self.quantum_device_cfg['heterodyne']['1'][
-                                                                          'freq'],
-                                                                      td=0,
-                                                                      pi_cal=self.expt_cfg.get('pi_calibration',False))
-                data_2_cos_list, data_2_sin_list, data_2_list = get_iq_data(expt_data_ch1,
-                                                                      het_freq=
-                                                                      self.quantum_device_cfg['heterodyne']['2'][
-                                                                          'freq'],
-                                                                      td=0,
-                                                                      pi_cal=self.expt_cfg.get('pi_calibration',False))
-
-                if seq_data_file == None:
-                    self.slab_file = SlabFile(data_file)
-                    with self.slab_file as f:
-                        f.add('expt_data_ch1', expt_data_ch1)
-                        f.add('expt_avg_data_ch1', data_1_list)
-                        f.add('expt_data_ch2', expt_data_ch2)
-                        f.add('expt_avg_data_ch2', data_2_list)
-                        f.close()
-
-            if not seq_data_file == None:
-                self.slab_file = SlabFile(data_file)
-                with self.slab_file as f:
-                    f.append_line('expt_avg_data_ch1', data_1_list)
-                    f.append_line('expt_avg_data_ch2', data_2_list)
-                    f.close()
+            self.get_avg_data(averages, data_file, seq_data_file)
 
         return data_file
 
