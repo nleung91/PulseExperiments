@@ -98,7 +98,7 @@ class PulseSequences:
                                     phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
             sequencer.append('readout%s_trig' % qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
 
-        sequencer.append('alazar_trig', Ones(time=100))
+        sequencer.append('alazar_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['alazar']))
 
         return readout_time
 
@@ -108,7 +108,7 @@ class PulseSequences:
         for rabi_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge1', self.qubit_pi[qubit_id])
                 sequencer.sync_channels_time(self.channels)
@@ -128,7 +128,7 @@ class PulseSequences:
         for qubit_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id,
                                  Square(max_amp=self.expt_cfg['pulse_amp'], flat_len=self.expt_cfg['pulse_length'],
@@ -148,7 +148,7 @@ class PulseSequences:
         for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id,
                                  Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len, cutoff_sigma=2,
@@ -169,8 +169,8 @@ class PulseSequences:
         for iq_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
-            sequencer.append('alazar_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
+            sequencer.append('alazar_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['alazar']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('hetero%s_I' % qubit_id,
                                  Square(max_amp=heterodyne_cfg[qubit_id]['amp'],
@@ -197,39 +197,17 @@ class PulseSequences:
             # no pi pulse
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
-            sequencer.append('alazar_trig', Ones(time=100))
-            for qubit_id in self.expt_cfg['on_qubits']:
-                sequencer.append('hetero%s_I' % qubit_id,
-                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
-                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq, phase=0,
-                                        phase_t0=0))
-                sequencer.append('hetero%s_Q' % qubit_id,
-                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
-                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq,
-                                        phase=np.pi / 2, phase_t0=0))
-                sequencer.append('readout%s_trig' % qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
-
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
             sequencer.end_sequence()
 
             # with pi pulse
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
-            sequencer.append('alazar_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
-                sequencer.sync_channels_time(self.channels)
-                sequencer.append('hetero%s_I' % qubit_id,
-                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
-                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq, phase=0,
-                                        phase_t0=0))
-                sequencer.append('hetero%s_Q' % qubit_id,
-                                 Square(max_amp=self.expt_cfg['amp'], flat_len=heterodyne_cfg[qubit_id]['length'],
-                                        ramp_sigma_len=20, cutoff_sigma=2, freq=iq_freq,
-                                        phase=np.pi / 2, phase_t0=0))
-                sequencer.append('readout%s_trig' % qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
-
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
             sequencer.end_sequence()
 
         return sequencer.complete(self, plot=True)
@@ -241,7 +219,7 @@ class PulseSequences:
         for t1_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, Idle(time=t1_len))
@@ -272,7 +250,7 @@ class PulseSequences:
         for ef_t1_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
@@ -292,7 +270,7 @@ class PulseSequences:
         for ramsey_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
@@ -321,7 +299,7 @@ class PulseSequences:
         for rabi_len in np.arange(0, 50, 5):
             sequencer.new_sequence()
 
-            sequencer.append('m8195a_trig', Ones(time=100))
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             self.readout(sequencer)
             # sequencer.append('charge1', Idle(time=100))
             sequencer.append('charge1',

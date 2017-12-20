@@ -173,13 +173,14 @@ class Experiment:
                 f.append_line('expt_avg_data_ch2', data_2_list)
                 f.close()
 
-    def run_experiment(self, sequences, path, name, seq_data_file=None):
+    def run_experiment(self, sequences, path, name, seq_data_file=None, update_awg = True):
 
         self.initiate_readout_rf()
         self.initiate_flux()
 
-        self.initiate_tek(name, path, sequences)
-        self.initiate_m8195a(path, sequences)
+        if update_awg:
+            self.initiate_tek(name, path, sequences)
+            self.initiate_m8195a(path, sequences)
 
         self.m8195a.start_output()
         self.tek.prep_experiment()
