@@ -202,6 +202,9 @@ class Experiment:
         with self.slab_file as f:
             self.save_cfg_info(f)
 
+        print('\n')
+        print(data_file)
+
         if self.expt_cfg.get('singleshot', False):
             self.get_singleshot_data(data_file)
         else:
