@@ -104,8 +104,11 @@ class Experiment:
     def get_singleshot_data(self, data_file):
         avgPerAcquisition = int(min(self.expt_cfg['averages'], 100))
         numAcquisition = int(np.ceil(self.expt_cfg['averages'] / 100))
-        het_IFreqList = self.quantum_device_cfg['heterodyne']['1']['freq_list'] + \
-                        self.quantum_device_cfg['heterodyne']['2']['freq_list']
+        het_IFreqList = []
+
+        for qubit_id in self.expt_cfg['on_qubits']:
+            het_IFreqList += [self.quantum_device_cfg['heterodyne'][qubit_id]['freq']]
+
         single_data1_list = []
         single_data2_list = []
         for ii in tqdm(np.arange(numAcquisition)):
@@ -120,10 +123,8 @@ class Experiment:
             single_data2_list.append(single_data2)
         self.slab_file = SlabFile(data_file)
         with self.slab_file as f:
-            f.add('single_data1', np.array(single_data1_list))
-            f.add('single_data2', np.array(single_data2_list))
-            f.append_line('single_record1', single_record1)
-            f.append_line('single_record2', single_record2)
+            f.append('single_data1', np.array(single_data1_list))
+            f.append('single_data2', np.array(single_data2_list))
             f.close()
 
     def get_avg_data(self, averages, data_file, seq_data_file):

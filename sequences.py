@@ -192,7 +192,7 @@ class PulseSequences:
         # vacuum rabi sequences
         heterodyne_cfg = self.quantum_device_cfg['heterodyne']
 
-        for iq_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+        for ii in range(50):
 
             # no pi pulse
             sequencer.new_sequence()
