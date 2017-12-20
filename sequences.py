@@ -32,6 +32,9 @@ class PulseSequences:
         self.qubit_freq = {"1": self.quantum_device_cfg['qubit']['1']['freq'],
                            "2": self.quantum_device_cfg['qubit']['2']['freq']}
 
+        self.qubit_ef_freq = {"1": self.quantum_device_cfg['qubit']['1']['freq']+self.quantum_device_cfg['anharmonicity']['1']['freq'],
+                           "2": self.quantum_device_cfg['qubit']['2']['freq']+self.quantum_device_cfg['anharmonicity']['2']['freq']}
+
         self.pulse_info = self.quantum_device_cfg['pulse_info']
 
         self.qubit_pi = {
@@ -45,6 +48,18 @@ class PulseSequences:
                    cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0, plot=False),
         "2": Gauss(max_amp=self.pulse_info['2']['half_pi_amp'], sigma_len=self.pulse_info['2']['half_pi_len'],
                    cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0, plot=False)}
+
+        self.qubit_ef_pi = {
+        "1": Gauss(max_amp=self.pulse_info['1']['pi_ef_amp'], sigma_len=self.pulse_info['1']['pi_ef_len'], cutoff_sigma=2,
+                   freq=self.qubit_ef_freq["1"], phase=0, plot=False),
+        "2": Gauss(max_amp=self.pulse_info['2']['pi_ef_amp'], sigma_len=self.pulse_info['2']['pi_ef_len'], cutoff_sigma=2,
+                   freq=self.qubit_ef_freq["2"], phase=0, plot=False)}
+
+        self.qubit_ef_half_pi = {
+        "1": Gauss(max_amp=self.pulse_info['1']['half_pi_ef_amp'], sigma_len=self.pulse_info['1']['half_pi_ef_len'],
+                   cutoff_sigma=2, freq=self.qubit_ef_freq["1"], phase=0, plot=False),
+        "2": Gauss(max_amp=self.pulse_info['2']['half_pi_ef_amp'], sigma_len=self.pulse_info['2']['half_pi_ef_len'],
+                   cutoff_sigma=2, freq=self.qubit_ef_freq["2"], phase=0, plot=False)}
 
         self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9],
                            'pi_len': [100, 100, 100, 100, 100, 100, 100, 100]}
@@ -88,8 +103,8 @@ class PulseSequences:
         return readout_time
 
     def sideband_rabi_freq(self, sequencer):
-        # rabi sequences
-        rabi_len = self.expt_cfg['rabi_len']
+        # sideband rabi freq sweep
+        rabi_len = self.expt_cfg['pulse_len']
         for rabi_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence()
 
@@ -250,6 +265,26 @@ class PulseSequences:
         #     sequencer.end_sequence()
         #
         # return sequencer.complete(plot=True)
+
+    def ef_t1(self, sequencer):
+        # t1 for the e and f level
+
+        for ef_t1_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=100))
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id, Idle(time=ef_t1_len))
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        pi_calibration_info = {'pi_calibration': True, 'expt_cfg': self.expt_cfg, 'qubit_pi': self.qubit_pi,
+                               'readout': self.readout}
+
+        return sequencer.complete(self, plot=False)
 
     def ramsey(self, sequencer):
         # ramsey sequences
