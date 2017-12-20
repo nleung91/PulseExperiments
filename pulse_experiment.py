@@ -11,7 +11,7 @@ import visdom
 from slab.datamanagement import SlabFile
 from slab.dataanalysis import get_next_filename
 import json
-
+from slab.experiments.PulseExperiments.get_data import get_iq_data
 
 class Experiment:
     def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
@@ -137,7 +137,6 @@ class Experiment:
                                        self.quantum_device_cfg['heterodyne']['1']['freq_list'] +
                                        self.quantum_device_cfg['heterodyne']['2']['freq_list'])
 
-
             single_data1_list = []
             single_data2_list = []
 
@@ -145,12 +144,12 @@ class Experiment:
                 # single_data1/2: index: (hetero_freqs, cos/sin, all_seqs)
                 single_data1, single_data2, single_record1, single_record2 = \
                     self.adc.acquire_singleshot_heterodyne_multitone_data_2(het_IFreqList, prep_function=self.awg_prep,
-                                                                     start_function=self.awg_run,
-                                                                     excise=self.quantum_device_cfg['alazar_readout'][
-                                                                         'window'])
+                                                                            start_function=self.awg_run,
+                                                                            excise=
+                                                                            self.quantum_device_cfg['alazar_readout'][
+                                                                                'window'])
                 single_data1_list.append(single_data1)
                 single_data2_list.append(single_data2)
-
 
             self.slab_file = SlabFile(data_file)
             with self.slab_file as f:
@@ -178,23 +177,33 @@ class Experiment:
                     expt_data_ch1 = (expt_data_ch1 * ii + ch1_pts) / (ii + 1.0)
                     expt_data_ch2 = (expt_data_ch2 * ii + ch2_pts) / (ii + 1.0)
 
-                expt_avg_data_ch1 = np.mean(expt_data_ch1, 1)
-                expt_avg_data_ch2 = np.mean(expt_data_ch2, 1)
+                data_1_cos_list, data_1_sin_list, data_1_list = get_iq_data(expt_data_ch1,
+                                                                      het_freq=
+                                                                      self.quantum_device_cfg['heterodyne']['1'][
+                                                                          'freq'],
+                                                                      td=0,
+                                                                      pi_cal=self.expt_cfg.get('pi_calibration',False))
+                data_2_cos_list, data_2_sin_list, data_2_list = get_iq_data(expt_data_ch1,
+                                                                      het_freq=
+                                                                      self.quantum_device_cfg['heterodyne']['2'][
+                                                                          'freq'],
+                                                                      td=0,
+                                                                      pi_cal=self.expt_cfg.get('pi_calibration',False))
 
                 if seq_data_file == None:
                     self.slab_file = SlabFile(data_file)
                     with self.slab_file as f:
                         f.add('expt_data_ch1', expt_data_ch1)
-                        f.add('expt_avg_data_ch1', expt_avg_data_ch1)
+                        f.add('expt_avg_data_ch1', data_1_list)
                         f.add('expt_data_ch2', expt_data_ch2)
-                        f.add('expt_avg_data_ch2', expt_avg_data_ch2)
+                        f.add('expt_avg_data_ch2', data_2_list)
                         f.close()
 
             if not seq_data_file == None:
                 self.slab_file = SlabFile(data_file)
                 with self.slab_file as f:
-                    f.append_line('expt_avg_data_ch1', expt_avg_data_ch1)
-                    f.append_line('expt_avg_data_ch2', expt_avg_data_ch2)
+                    f.append_line('expt_avg_data_ch1', data_1_list)
+                    f.append_line('expt_avg_data_ch2', data_2_list)
                     f.close()
 
         return data_file

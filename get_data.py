@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_iq_data(expt_data,expt_pts,het_freq = 0.148, td=0, pi_cal = False):
+def get_iq_data(expt_data,het_freq = 0.148, td=0, pi_cal = False):
     data_cos_list=[]
     data_sin_list=[]
 
