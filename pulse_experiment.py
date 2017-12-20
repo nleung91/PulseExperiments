@@ -123,13 +123,11 @@ class Experiment:
         if seq_data_file == None:
             data_path = os.path.join(path, 'data/')
             data_file = os.path.join(data_path, get_next_filename(data_path, name, suffix='.h5'))
-            self.slab_file = SlabFile(data_file)
-            with self.slab_file as f:
-                self.save_cfg_info(f)
         else:
-            self.slab_file = SlabFile(seq_data_file)
-            with self.slab_file as f:
-                self.save_cfg_info(f)
+            data_file = seq_data_file
+        self.slab_file = SlabFile(data_file)
+        with self.slab_file as f:
+            self.save_cfg_info(f)
 
         if self.expt_cfg.get('singleshot', False):
             avgPerAcquisition = int(min(self.expt_cfg['averages'], 100))
@@ -154,10 +152,7 @@ class Experiment:
                 single_data2_list.append(single_data2)
 
 
-            if seq_data_file == None:
-                self.slab_file = SlabFile(data_file)
-            else:
-                self.slab_file = SlabFile(seq_data_file)
+            self.slab_file = SlabFile(data_file)
             with self.slab_file as f:
                 f.add('single_data1', np.array(single_data1_list))
                 f.add('single_data2', np.array(single_data2_list))
@@ -196,9 +191,11 @@ class Experiment:
                         f.close()
 
             if not seq_data_file == None:
-                self.slab_file = SlabFile(seq_data_file)
+                self.slab_file = SlabFile(data_file)
                 with self.slab_file as f:
                     f.append_line('expt_avg_data_ch1', expt_avg_data_ch1)
                     f.append_line('expt_avg_data_ch2', expt_avg_data_ch2)
                     f.close()
+
+        return data_file
 
