@@ -128,12 +128,12 @@ class Sequencer:
         if sequences.expt_cfg.get('pi_calibration', False):
 
             self.new_sequence()
-            self.append('m8195a_trig', Ones(time=100))
+            self.append('m8195a_trig', Ones(time=sequences.hardware_cfg['trig_pulse_len']['m8195a']))
             sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
             self.end_sequence()
 
             self.new_sequence()
-            self.append('m8195a_trig', Ones(time=100))
+            self.append('m8195a_trig', Ones(time=sequences.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in sequences.expt_cfg['on_qubits']:
                 self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])
             sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
