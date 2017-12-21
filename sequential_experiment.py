@@ -18,7 +18,8 @@ def histogram(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
                "2": quantum_device_cfg['heterodyne']['2']['lo_freq']}
 
     for amp in np.arange(expt_cfg['amp_start'], expt_cfg['amp_stop'], expt_cfg['amp_step']):
-        experiment_cfg['histogram']['amp'] = amp
+        for qubit_id in on_qubits:
+            quantum_device_cfg['heterodyne'][qubit_id]['amp'] = amp
         ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
         sequences = ps.get_experiment_sequences('histogram')
         update_awg = True

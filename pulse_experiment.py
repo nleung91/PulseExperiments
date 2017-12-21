@@ -52,6 +52,7 @@ class Experiment:
         write_Tek5014_file(tek_waveforms, tek_markers, os.path.join(path, 'sequences/tek.awg'), name)
         self.tek.pre_load()
         self.tek.load_sequence_file(os.path.join(path, 'sequences/tek.awg'), force_reload=True)
+        self.tek.set_amps_offsets(channel_offsets=self.hardware_cfg['awg_info']['tek5014a']['offsets'])
 
 
     def initiate_m8195a(self, path, sequences):

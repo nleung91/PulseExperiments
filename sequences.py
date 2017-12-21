@@ -95,7 +95,7 @@ class PulseSequences:
                              Square(max_amp=heterodyne_cfg[qubit_id]['amp'],
                                     flat_len=heterodyne_cfg[qubit_id]['length'],
                                     ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg[qubit_id]['freq'],
-                                    phase=np.pi / 2, phase_t0=readout_time_5ns_multiple))
+                                    phase=np.pi / 2 + heterodyne_cfg[qubit_id]['phase_offset'], phase_t0=readout_time_5ns_multiple))
             sequencer.append('readout%s_trig' % qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
 
         sequencer.append('alazar_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['alazar']))
