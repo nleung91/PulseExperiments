@@ -121,6 +121,26 @@ class PulseSequences:
 
         return sequencer.complete(self,plot=False)
 
+    def ef_sideband_rabi_freq(self, sequencer):
+        # sideband rabi freq sweep
+        rabi_len = self.expt_cfg['pulse_len']
+        for rabi_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('flux%s'%qubit_id,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=rabi_freq, phase=0,
+                                        plot=False))
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self,plot=False)
+
 
     def pulse_probe(self, sequencer):
         # pulse_probe sequences
@@ -226,9 +246,9 @@ class PulseSequences:
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
-
-        pi_calibration_info = {'pi_calibration': True, 'expt_cfg': self.expt_cfg, 'qubit_pi': self.qubit_pi,
-                               'readout': self.readout}
+        #
+        # pi_calibration_info = {'pi_calibration': True, 'expt_cfg': self.expt_cfg, 'qubit_pi': self.qubit_pi,
+        #                        'readout': self.readout}
 
         return sequencer.complete(self, plot=False)
 
@@ -259,8 +279,46 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        pi_calibration_info = {'pi_calibration': True, 'expt_cfg': self.expt_cfg, 'qubit_pi': self.qubit_pi,
-                               'readout': self.readout}
+        return sequencer.complete(self, plot=False)
+
+    def ef_rabi(self, sequencer):
+        # ef rabi sequences
+
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id,
+                                 Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len,
+                   cutoff_sigma=2, freq=self.qubit_ef_freq[qubit_id], phase=0, plot=False))
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=False)
+
+    def ef_ramsey(self, sequencer):
+        # ef ramsey sequences
+
+        for ramsey_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id, self.qubit_ef_half_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
+                sequencer.append('charge%s' % qubit_id,
+                                 Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_ef_amp'], sigma_len=self.pulse_info[qubit_id]['half_pi_ef_len'],
+                   cutoff_sigma=2, freq=self.qubit_ef_freq[qubit_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'], plot=False))
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
 
         return sequencer.complete(self, plot=False)
 
