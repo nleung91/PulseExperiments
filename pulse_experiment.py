@@ -152,7 +152,7 @@ class Experiment:
                                                                         td=0,
                                                                         pi_cal=self.expt_cfg.get('pi_calibration',
                                                                                                  False))
-            data_2_cos_list, data_2_sin_list, data_2_list = get_iq_data(expt_data_ch1,
+            data_2_cos_list, data_2_sin_list, data_2_list = get_iq_data(expt_data_ch2,
                                                                         het_freq=
                                                                         self.quantum_device_cfg['heterodyne']['2'][
                                                                             'freq'],
