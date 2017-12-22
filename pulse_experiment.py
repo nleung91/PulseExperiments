@@ -123,6 +123,8 @@ class Experiment:
                                                                             'window'])
             single_data1_list.append(single_data1)
             single_data2_list.append(single_data2)
+
+        self.adc.close()
         self.slab_file = SlabFile(data_file)
         with self.slab_file as f:
             f.append('single_data1', np.array(single_data1_list))
@@ -169,6 +171,7 @@ class Experiment:
                     f.add('expt_data_ch2', expt_data_ch2)
                     f.add('expt_avg_data_ch2', data_2_list)
                     f.close()
+        self.adc.close()
         if not seq_data_file == None:
             self.slab_file = SlabFile(data_file)
             with self.slab_file as f:
