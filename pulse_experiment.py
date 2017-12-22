@@ -65,9 +65,10 @@ class Experiment:
         upload_M8195A_sequence(self.m8195a, waveform_matrix, awg_info, path)
 
     def awg_prep(self):
-        self.m8195a.stop_output()
         self.tek.stop()
         self.tek.prep_experiment()
+        self.m8195a.stop_output()
+        time.sleep(1)
 
     def awg_run(self):
         self.m8195a.start_output()
