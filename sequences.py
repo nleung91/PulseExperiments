@@ -234,7 +234,7 @@ class PulseSequences:
             self.readout(sequencer, self.expt_cfg['on_qubits'])
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=True)
+        return sequencer.complete(self, plot=False)
 
 
     def t1(self, sequencer):
