@@ -76,7 +76,7 @@ class Experiment:
         self.tek.run()
 
 
-    def initiate_alazar(self, sequence_length, averages):
+    def  initiate_alazar(self, sequence_length, averages):
         self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (
             self.quantum_device_cfg['alazar_readout']['width'] - 1).bit_length()
         self.hardware_cfg['alazar']['recordsPerBuffer'] = sequence_length

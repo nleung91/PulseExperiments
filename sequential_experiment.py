@@ -36,6 +36,8 @@ def histogram(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
 def qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
     sequences = ps.get_experiment_sequences('ramsey')
+    expt_cfg = experiment_cfg['ramsey']
+    uncalibrated_qubits = list(expt_cfg['on_qubits'])
     for ii in range(3):
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
         data_file = exp.run_experiment(sequences, path, 'ramsey')
@@ -53,6 +55,7 @@ def qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardwar
                 flux_offset = -(real_qubit_freq - qubit_freq) / quantum_device_cfg['freq_flux'][qubit_id][
                     'freq_flux_slope']
                 suggested_flux = round(quantum_device_cfg['freq_flux'][qubit_id]['current_mA'] + flux_offset, 4)
+                print('qubit %s' %qubit_id)
                 print('original qubit frequency:' + str(qubit_freq) + " GHz")
                 print('Decay Time: %s ns' % (fitdata[3]))
                 print("Oscillation frequency: %s GHz" % str(fitdata[1]))
@@ -64,12 +67,16 @@ def qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardwar
 
                 if (abs(freq_offset) < 50e-6):
                     print("Frequency is within expected value. No further calibration required.")
-                    with open(os.path.join(path, 'quantum_device_config.json'), 'w') as f:
-                        json.dump(quantum_device_cfg, f)
-                    continue
+                    uncalibrated_qubits.remove(qubit_id)
                 elif (abs(flux_offset) < 0.01):
                     print("Changing flux to the suggested flux: %s mA" % str(suggested_flux))
                     quantum_device_cfg['freq_flux'][qubit_id]['current_mA'] = suggested_flux
                 else:
                     print("Large change in flux is required; please do so manually")
+                    return
+
+                if uncalibrated_qubits == []:
+                    print("All qubits frequency calibrated.")
+                    with open(os.path.join(path, 'quantum_device_config.json'), 'w') as f:
+                        json.dump(quantum_device_cfg, f)
                     return
