@@ -312,7 +312,16 @@ class PulseSequences:
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, self.qubit_ef_half_pi[qubit_id])
-                sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
+                for echo_id in self.expt_cfg['echo_times']:
+                    sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len/(float(2*self.expt_cfg['echo_times']))))
+                    if self.expt_cfg['cp']:
+                        sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
+                    elif self.expt_cfg['cpmg']:
+                        sequencer.append('charge%s' % qubit_id,
+                                 Gauss(max_amp=self.pulse_info[qubit_id]['pi_ef_amp'],
+                                       sigma_len=self.pulse_info[qubit_id]['pi_ef_len'], cutoff_sigma=2,
+                                       freq=self.qubit_ef_freq[qubit_id], phase=0.5*np.pi, plot=False))
+                    sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len/(float(2*self.expt_cfg['echo_times']))))
                 sequencer.append('charge%s' % qubit_id,
                                  Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_ef_amp'], sigma_len=self.pulse_info[qubit_id]['half_pi_ef_len'],
                    cutoff_sigma=2, freq=self.qubit_ef_freq[qubit_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'], plot=False))
@@ -332,7 +341,16 @@ class PulseSequences:
             sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
-                sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
+                for echo_id in self.expt_cfg['echo_times']:
+                    sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len/(float(2*self.expt_cfg['echo_times']))))
+                    if self.expt_cfg['cp']:
+                        sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                    elif self.expt_cfg['cpmg']:
+                        sequencer.append('charge%s' % qubit_id,
+                                 Gauss(max_amp=self.pulse_info[qubit_id]['pi_amp'],
+                                       sigma_len=self.pulse_info[qubit_id]['pi_len'], cutoff_sigma=2,
+                                       freq=self.qubit_freq[qubit_id], phase=0.5*np.pi, plot=False))
+                    sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len/(float(2*self.expt_cfg['echo_times']))))
                 sequencer.append('charge%s' % qubit_id,
                                  Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_amp'],
                                        sigma_len=self.pulse_info[qubit_id]['half_pi_len'], cutoff_sigma=2,
