@@ -390,7 +390,7 @@ class PulseSequences:
             for qubit_id in self.expt_cfg['on_qubits']:
                 mm_id = self.expt_cfg['on_mms'][qubit_id]
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('flux%s'%qubit_id,
                                  Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
                                         plot=False))
@@ -411,13 +411,13 @@ class PulseSequences:
             for qubit_id in self.expt_cfg['on_qubits']:
                 mm_id = self.expt_cfg['on_mms'][qubit_id]
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('flux%s'%qubit_id,
                                  Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
                                         plot=False))
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('charge%s' % qubit_id, Idle(time=t1_len))
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('flux%s'%qubit_id,
                                  Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
                                         plot=False))
@@ -437,23 +437,23 @@ class PulseSequences:
             for qubit_id in self.expt_cfg['on_qubits']:
                 mm_id = self.expt_cfg['on_mms'][qubit_id]
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('flux%s'%qubit_id,
                                  Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
                                         plot=False))
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('flux%s'%qubit_id,
                                  Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'],
                                         plot=False))
-                sequencer.sync_channels_time(self.channels)
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def alazar_test(self, sequencer):
         # drag_rabi sequences
