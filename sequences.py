@@ -61,12 +61,7 @@ class PulseSequences:
         "2": Gauss(max_amp=self.pulse_info['2']['half_pi_ef_amp'], sigma_len=self.pulse_info['2']['half_pi_ef_len'],
                    cutoff_sigma=2, freq=self.qubit_ef_freq["2"], phase=0, plot=False)}
 
-        self.multimodes = {'freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0],
-                           'ef_freq': [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0],
-                           'pi_len': [100, 100, 100, 100, 100, 100, 100, 100, 100],
-                           'ef_pi_len': [100, 100, 100, 100, 100, 100, 100, 100, 100],
-                           'pi_amp': [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                           'ef_pi_amp': [1, 1, 1, 1, 1, 1, 1, 1, 1]}
+        self.multimodes = self.quantum_device_cfg['multimodes']
 
     def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
         self.set_parameters(quantum_device_cfg, experiment_cfg, hardware_cfg)
@@ -346,16 +341,6 @@ class PulseSequences:
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
-                # for echo_id in range(self.expt_cfg['echo_times']):
-                #     sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len/(float(2*self.expt_cfg['echo_times']))))
-                #     if self.expt_cfg['cp']:
-                #         sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
-                #     elif self.expt_cfg['cpmg']:
-                #         sequencer.append('charge%s' % qubit_id,
-                #                  Gauss(max_amp=self.pulse_info[qubit_id]['pi_amp'],
-                #                        sigma_len=self.pulse_info[qubit_id]['pi_len'], cutoff_sigma=2,
-                #                        freq=self.qubit_freq[qubit_id], phase=0.5*np.pi, plot=False))
-                #     sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len/(float(2*self.expt_cfg['echo_times']))))
                 sequencer.append('charge%s' % qubit_id,
                                  Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_amp'],
                                        sigma_len=self.pulse_info[qubit_id]['half_pi_len'], cutoff_sigma=2,
@@ -428,11 +413,13 @@ class PulseSequences:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.sync_channels_time(self.channels)
                 sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.multimodes['amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
+                                 Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
                                         plot=False))
+                sequencer.sync_channels_time(self.channels)
                 sequencer.append('charge%s' % qubit_id, Idle(time=t1_len))
+                sequencer.sync_channels_time(self.channels)
                 sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.multimodes['amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
+                                 Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
                                         plot=False))
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
@@ -452,12 +439,16 @@ class PulseSequences:
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
                 sequencer.sync_channels_time(self.channels)
                 sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.multimodes['amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
+                                 Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=0,
                                         plot=False))
-                sequencer.append('charge%s' % qubit_id,
-                                 Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_amp'],
-                                       sigma_len=self.pulse_info[qubit_id]['half_pi_len'], cutoff_sigma=2,
-                                       freq=self.qubit_freq[qubit_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'], plot=False))
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('flux%s'%qubit_id,
+                                 Square(max_amp=self.multimodes['pi_amp'][mm_id], flat_len=self.multimodes['pi_len'][mm_id], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes['freq'][mm_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'],
+                                        plot=False))
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
