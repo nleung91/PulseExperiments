@@ -103,7 +103,7 @@ class Experiment:
         f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
         f.close()
 
-    def get_singleshot_data(self, acquisition_num, data_file):
+    def get_singleshot_data(self, sequence_length, acquisition_num, data_file):
         avgPerAcquisition = int(min(acquisition_num, 100))
         numAcquisition = int(np.ceil(acquisition_num / 100))
         het_IFreqList = []
@@ -124,12 +124,30 @@ class Experiment:
             single_data1_list.append(single_data1)
             single_data2_list.append(single_data2)
 
+            single_data1 = np.array(single_data1_list)
+            single_data2 = np.array(single_data2_list)
+
+            single_data1 = np.transpose(single_data1, (1, 2, 0, 3))
+            single_data1 = single_data1.reshape(*single_data1.shape[:2],-1)
+
+            single_data2 = np.transpose(single_data2, (1, 2, 0, 3))
+            single_data2 = single_data2.reshape(*single_data2.shape[:2],-1)
+
+
+            single_data1 = single_data1.reshape(*single_data1.shape[:2],-1, sequence_length)
+            single_data2 = single_data2.reshape(*single_data2.shape[:2],-1, sequence_length)
+
+            # single_data1/2: index: (hetero_freqs, cos/sin , seqs, acquisitions)
+            single_data1 = np.transpose(single_data1, (0,1,3,2))
+            single_data2 = np.transpose(single_data2, (0,1,3,2))
+
+            self.slab_file = SlabFile(data_file)
+            with self.slab_file as f:
+                f.add('single_data1', single_data1)
+                f.add('single_data2', single_data2)
+                f.close()
+
         self.adc.close()
-        self.slab_file = SlabFile(data_file)
-        with self.slab_file as f:
-            f.append('single_data1', np.array(single_data1_list))
-            f.append('single_data2', np.array(single_data2_list))
-            f.close()
 
     def get_avg_data(self, acquisition_num, data_file, seq_data_file):
         expt_data_ch1 = None
@@ -213,7 +231,7 @@ class Experiment:
         print(data_file)
 
         if self.expt_cfg.get('singleshot', False):
-            self.get_singleshot_data(acquisition_num, data_file)
+            self.get_singleshot_data(sequence_length, acquisition_num, data_file)
         else:
             self.get_avg_data(acquisition_num, data_file, seq_data_file)
 
