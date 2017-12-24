@@ -103,7 +103,7 @@ class Experiment:
         f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
         f.close()
 
-    def get_singleshot_data(self, sequence_length, acquisition_num, data_file):
+    def get_singleshot_data(self, sequence_length, acquisition_num, data_file, seq_data_file):
         avgPerAcquisition = int(min(acquisition_num, 100))
         numAcquisition = int(np.ceil(acquisition_num / 100))
         het_IFreqList = []
@@ -141,12 +141,19 @@ class Experiment:
             single_data1 = np.transpose(single_data1, (0,1,3,2))
             single_data2 = np.transpose(single_data2, (0,1,3,2))
 
+            if seq_data_file == None:
+                self.slab_file = SlabFile(data_file)
+                with self.slab_file as f:
+                    f.add('single_data1', single_data1)
+                    f.add('single_data2', single_data2)
+                    f.close()
+
+        if not seq_data_file == None:
             self.slab_file = SlabFile(data_file)
             with self.slab_file as f:
-                f.add('single_data1', single_data1)
-                f.add('single_data2', single_data2)
+                f.append('single_data1', single_data1)
+                f.append('single_data2', single_data2)
                 f.close()
-
         self.adc.close()
 
     def get_avg_data(self, acquisition_num, data_file, seq_data_file):
@@ -231,7 +238,7 @@ class Experiment:
         print(data_file)
 
         if self.expt_cfg.get('singleshot', False):
-            self.get_singleshot_data(sequence_length, acquisition_num, data_file)
+            self.get_singleshot_data(sequence_length, acquisition_num, data_file, seq_data_file)
         else:
             self.get_avg_data(acquisition_num, data_file, seq_data_file)
 
