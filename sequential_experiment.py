@@ -80,3 +80,28 @@ def qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardwar
                     with open(os.path.join(path, 'quantum_device_config.json'), 'w') as f:
                         json.dump(quantum_device_cfg, f)
                     return
+
+
+def sideband_rabi_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['sideband_rabi_sweep']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'sideband_rabi_sweep', suffix='.h5'))
+    on_qubits = expt_cfg['on_qubits']
+
+    for freq in np.arange(expt_cfg['freq_start'], expt_cfg['freq_stop'], expt_cfg['freq_step']):
+        experiment_cfg['sideband_rabi']['freq'] = freq
+        experiment_cfg['sideband_rabi']['amp'] = expt_cfg['amp']
+        experiment_cfg['sideband_rabi']['start'] = expt_cfg['time_start']
+        experiment_cfg['sideband_rabi']['stop'] = expt_cfg['time_stop']
+        experiment_cfg['sideband_rabi']['step'] = expt_cfg['time_step']
+        experiment_cfg['sideband_rabi']['averages'] = expt_cfg['averages']
+        experiment_cfg['sideband_rabi']['on_qubits'] = expt_cfg['on_qubits']
+        experiment_cfg['sideband_rabi']['pi_calibration'] = expt_cfg['pi_calibration']
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('sideband_rabi')
+        update_awg = True
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        exp.run_experiment(sequences, path, 'sideband_rabi_sweep', seq_data_file, update_awg)
+
+        update_awg = False

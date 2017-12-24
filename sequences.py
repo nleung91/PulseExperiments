@@ -101,6 +101,25 @@ class PulseSequences:
 
         return readout_time
 
+    def sideband_rabi(self, sequencer):
+        # sideband rabi time domain
+        rabi_freq = self.expt_cfg['freq']
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence()
+
+            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge1', self.qubit_pi[qubit_id])
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('flux%s'%qubit_id,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=rabi_freq, phase=0,
+                                        plot=False))
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self,plot=False)
+
     def sideband_rabi_freq(self, sequencer):
         # sideband rabi freq sweep
         rabi_len = self.expt_cfg['pulse_len']
