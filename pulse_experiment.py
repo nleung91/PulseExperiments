@@ -103,9 +103,9 @@ class Experiment:
         f.attrs['hardware_cfg'] = json.dumps(self.hardware_cfg)
         f.close()
 
-    def get_singleshot_data(self, data_file):
-        avgPerAcquisition = int(min(self.expt_cfg['acquisition_num'], 100))
-        numAcquisition = int(np.ceil(self.expt_cfg['acquisition_num'] / 100))
+    def get_singleshot_data(self, acquisition_num, data_file):
+        avgPerAcquisition = int(min(acquisition_num, 100))
+        numAcquisition = int(np.ceil(acquisition_num / 100))
         het_IFreqList = []
 
         for qubit_id in self.expt_cfg['on_qubits']:
@@ -213,7 +213,7 @@ class Experiment:
         print(data_file)
 
         if self.expt_cfg.get('singleshot', False):
-            self.get_singleshot_data(data_file)
+            self.get_singleshot_data(acquisition_num, data_file)
         else:
             self.get_avg_data(acquisition_num, data_file, seq_data_file)
 
