@@ -104,8 +104,8 @@ class Experiment:
         f.close()
 
     def get_singleshot_data(self, data_file):
-        avgPerAcquisition = int(min(self.expt_cfg['averages'], 100))
-        numAcquisition = int(np.ceil(self.expt_cfg['averages'] / 100))
+        avgPerAcquisition = int(min(self.expt_cfg['acquisition_num'], 100))
+        numAcquisition = int(np.ceil(self.expt_cfg['acquisition_num'] / 100))
         het_IFreqList = []
 
         for qubit_id in self.expt_cfg['on_qubits']:
@@ -131,10 +131,10 @@ class Experiment:
             f.append('single_data2', np.array(single_data2_list))
             f.close()
 
-    def get_avg_data(self, averages, data_file, seq_data_file):
+    def get_avg_data(self, acquisition_num, data_file, seq_data_file):
         expt_data_ch1 = None
         expt_data_ch2 = None
-        for ii in tqdm(np.arange(max(1, int(averages / 100)))):
+        for ii in tqdm(np.arange(max(1, int(acquisition_num / 100)))):
             tpts, ch1_pts, ch2_pts = self.adc.acquire_avg_data_by_record(prep_function=self.awg_prep,
                                                                          start_function=self.awg_run,
                                                                          excise=
@@ -196,9 +196,9 @@ class Experiment:
 
         self.expt_cfg = self.experiment_cfg[name]
 
-        averages = self.expt_cfg['averages']
+        acquisition_num = self.expt_cfg['acquisition_num']
 
-        self.initiate_alazar(sequence_length, averages)
+        self.initiate_alazar(sequence_length, acquisition_num)
 
         if seq_data_file == None:
             data_path = os.path.join(path, 'data/')
@@ -215,7 +215,7 @@ class Experiment:
         if self.expt_cfg.get('singleshot', False):
             self.get_singleshot_data(data_file)
         else:
-            self.get_avg_data(averages, data_file, seq_data_file)
+            self.get_avg_data(acquisition_num, data_file, seq_data_file)
 
         return data_file
 
