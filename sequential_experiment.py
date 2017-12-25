@@ -94,7 +94,7 @@ def sideband_rabi_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
         experiment_cfg['sideband_rabi']['start'] = expt_cfg['time_start']
         experiment_cfg['sideband_rabi']['stop'] = expt_cfg['time_stop']
         experiment_cfg['sideband_rabi']['step'] = expt_cfg['time_step']
-        experiment_cfg['sideband_rabi']['averages'] = expt_cfg['averages']
+        experiment_cfg['sideband_rabi']['acquisition_num'] = expt_cfg['acquisition_num']
         experiment_cfg['sideband_rabi']['on_qubits'] = expt_cfg['on_qubits']
         experiment_cfg['sideband_rabi']['pi_calibration'] = expt_cfg['pi_calibration']
         ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
