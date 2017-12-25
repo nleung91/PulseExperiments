@@ -1,5 +1,40 @@
 import numpy as np
 
+def get_singleshot_data(expt_data, het_ind ,pi_cal = False):
+
+
+    data_cos_list= expt_data[het_ind][0]
+    data_sin_list= expt_data[het_ind][1]
+
+
+    if pi_cal:
+
+        ge_cos = np.mean(data_cos_list[-1]) - np.mean(data_cos_list[-2])
+        ge_sin = np.mean(data_sin_list[-1]) - np.mean(data_sin_list[-2])
+
+        ge_mean_vec = np.array([ge_cos,ge_sin])
+
+        data_cos_sin_list = np.array([data_cos_list[:-2] - np.mean(data_cos_list[-2]),
+                                      data_sin_list[:-2] - np.mean(data_sin_list[-2])])
+
+        data_cos_sin_list = np.transpose(data_cos_sin_list, (1,0,2))
+
+
+        data_list = np.dot(ge_mean_vec,data_cos_sin_list)/np.dot(ge_mean_vec,ge_mean_vec)
+
+
+    else:
+        cos_contrast = np.abs(np.max(data_cos_list)-np.min(data_cos_list))
+        sin_contrast = np.abs(np.max(data_sin_list)-np.min(data_sin_list))
+
+        if cos_contrast > sin_contrast:
+            data_list = data_cos_list
+        else:
+            data_list = data_sin_list
+
+
+    return data_cos_list, data_sin_list, data_list
+
 def get_iq_data(expt_data,het_freq = 0.148, td=0, pi_cal = False):
     data_cos_list=[]
     data_sin_list=[]

@@ -67,7 +67,7 @@ def qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardwar
 
                 if (abs(freq_offset) < 50e-6):
                     print("Frequency is within expected value. No further calibration required.")
-                    uncalibrated_qubits.remove(qubit_id)
+                    if qubit_id in uncalibrated_qubits: uncalibrated_qubits.remove(qubit_id)
                 elif (abs(flux_offset) < 0.01):
                     print("Changing flux to the suggested flux: %s mA" % str(suggested_flux))
                     quantum_device_cfg['freq_flux'][qubit_id]['current_mA'] = suggested_flux

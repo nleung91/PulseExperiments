@@ -11,7 +11,7 @@ import visdom
 from slab.datamanagement import SlabFile
 from slab.dataanalysis import get_next_filename
 import json
-from slab.experiments.PulseExperiments.get_data import get_iq_data
+from slab.experiments.PulseExperiments.get_data import get_iq_data, get_singleshot_data
 
 
 class Experiment:
@@ -76,7 +76,7 @@ class Experiment:
         self.tek.run()
 
 
-    def  initiate_alazar(self, sequence_length, averages):
+    def initiate_alazar(self, sequence_length, averages):
         self.hardware_cfg['alazar']['samplesPerRecord'] = 2 ** (
             self.quantum_device_cfg['alazar_readout']['width'] - 1).bit_length()
         self.hardware_cfg['alazar']['recordsPerBuffer'] = sequence_length
@@ -128,24 +128,34 @@ class Experiment:
             single_data2 = np.array(single_data2_list)
 
             single_data1 = np.transpose(single_data1, (1, 2, 0, 3))
-            single_data1 = single_data1.reshape(*single_data1.shape[:2],-1)
+            single_data1 = single_data1.reshape(*single_data1.shape[:2], -1)
 
             single_data2 = np.transpose(single_data2, (1, 2, 0, 3))
-            single_data2 = single_data2.reshape(*single_data2.shape[:2],-1)
+            single_data2 = single_data2.reshape(*single_data2.shape[:2], -1)
 
-
-            single_data1 = single_data1.reshape(*single_data1.shape[:2],-1, sequence_length)
-            single_data2 = single_data2.reshape(*single_data2.shape[:2],-1, sequence_length)
+            single_data1 = single_data1.reshape(*single_data1.shape[:2], -1, sequence_length)
+            single_data2 = single_data2.reshape(*single_data2.shape[:2], -1, sequence_length)
 
             # single_data1/2: index: (hetero_freqs, cos/sin , seqs, acquisitions)
-            single_data1 = np.transpose(single_data1, (0,1,3,2))
-            single_data2 = np.transpose(single_data2, (0,1,3,2))
+            single_data1 = np.transpose(single_data1, (0, 1, 3, 2))
+            single_data2 = np.transpose(single_data2, (0, 1, 3, 2))
+
+            data_1_cos_list, data_1_sin_list, data_1_list = get_singleshot_data(single_data1, 0,
+                                                                                self.expt_cfg.get('pi_calibration',
+                                                                                                  False))
+            data_2_cos_list, data_2_sin_list, data_2_list = get_singleshot_data(single_data2, 1,
+                                                                                self.expt_cfg.get('pi_calibration',
+                                                                                                  False))
+            data_1_avg_list = np.mean(data_1_list, axis=1)
+            data_2_avg_list = np.mean(data_2_list, axis=1)
 
             if seq_data_file == None:
                 self.slab_file = SlabFile(data_file)
                 with self.slab_file as f:
                     f.add('single_data1', single_data1)
+                    f.add('expt_avg_data_ch1', data_1_avg_list)
                     f.add('single_data2', single_data2)
+                    f.add('expt_avg_data_ch2', data_2_avg_list)
                     f.close()
 
         if not seq_data_file == None:
@@ -153,6 +163,8 @@ class Experiment:
             with self.slab_file as f:
                 f.append('single_data1', single_data1)
                 f.append('single_data2', single_data2)
+                f.append_line('expt_avg_data_ch1', data_1_list)
+                f.append_line('expt_avg_data_ch2', data_2_list)
                 f.close()
         self.adc.close()
 
@@ -204,7 +216,7 @@ class Experiment:
                 f.append_line('expt_avg_data_ch2', data_2_list)
                 f.close()
 
-    def run_experiment(self, sequences, path, name, seq_data_file=None, update_awg = True):
+    def run_experiment(self, sequences, path, name, seq_data_file=None, update_awg=True):
 
         self.initiate_readout_rf()
         self.initiate_flux()
