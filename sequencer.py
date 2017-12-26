@@ -24,12 +24,24 @@ class Sequencer:
         self.pulse_array_list = {}
         self.multiple_sequences = []
 
-    def new_sequence(self):
+    def new_sequence(self, sequences):
         self.pulse_array_list = {}
         for channel in self.channels:
             idle = Idle(time=100, dt=self.channels_awg_info[channel]['dt'])
             idle.generate_pulse_array()
             self.pulse_array_list[channel] = [idle.pulse_array]
+
+        # M8195a trig
+        self.append('m8195a_trig', Ones(time=sequences.hardware_cfg['trig_pulse_len']['m8195a']))
+
+        # sideband cooling
+        for qubit_id in sequences.expt_cfg.get('on_qubits', ['1','2']):
+            if sequences.sideband_cooling[qubit_id]['cool']:
+                self.append('flux%s'%qubit_id,
+                             Square(max_amp=sequences.multimodes[qubit_id]['pi_amp'][sequences.sideband_cooling[qubit_id]['mode_id']], flat_len=sequences.multimodes[qubit_id]['pi_len'][sequences.sideband_cooling[qubit_id]['mode_id']],
+                                    ramp_sigma_len=5, cutoff_sigma=2, freq=sequences.multimodes[qubit_id]['freq'][sequences.sideband_cooling[qubit_id]['mode_id']], phase=0,
+                                    plot=False))
+                self.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
 
     def append(self, channel, pulse):
         pulse.generate_pulse_array(t0=self.get_time(channel), dt=self.channels_awg_info[channel]['dt'])
@@ -127,12 +139,12 @@ class Sequencer:
 
         if sequences.expt_cfg.get('pi_calibration', False):
 
-            self.new_sequence()
+            self.new_sequence(sequences)
             self.append('m8195a_trig', Ones(time=sequences.hardware_cfg['trig_pulse_len']['m8195a']))
             sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
             self.end_sequence()
 
-            self.new_sequence()
+            self.new_sequence(sequences)
             self.append('m8195a_trig', Ones(time=sequences.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in sequences.expt_cfg['on_qubits']:
                 self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])

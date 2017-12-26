@@ -62,6 +62,7 @@ class PulseSequences:
                    cutoff_sigma=2, freq=self.qubit_ef_freq["2"], phase=0, plot=False)}
 
         self.multimodes = self.quantum_device_cfg['multimodes']
+        self.sideband_cooling = self.quantum_device_cfg['sideband_cooling']
 
     def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
         self.set_parameters(quantum_device_cfg, experiment_cfg, hardware_cfg)
@@ -124,7 +125,7 @@ class PulseSequences:
         # sideband rabi freq sweep
         rabi_len = self.expt_cfg['pulse_len']
         for rabi_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
-            sequencer.new_sequence()
+            sequencer.new_sequence(self)
 
             sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
@@ -184,7 +185,7 @@ class PulseSequences:
         # rabi sequences
 
         for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
-            sequencer.new_sequence()
+            sequencer.new_sequence(self)
 
             sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
@@ -303,27 +304,21 @@ class PulseSequences:
         # ef rabi sequences
 
         for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
-            sequencer.new_sequence()
+            sequencer.new_sequence(self)
 
-            sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
-                if self.expt_cfg['sideband_cooling']:
-                    sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.multimodes[qubit_id]['pi_amp'][0], flat_len=self.multimodes[qubit_id]['pi_len'][0], ramp_sigma_len=5, cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][0], phase=0,
-                                        plot=False))
-                    sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 if self.expt_cfg['ge_pi']:
                     sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id,
                                  Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len,
                    cutoff_sigma=2, freq=self.qubit_ef_freq[qubit_id], phase=0, plot=False))
-                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                # sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def ef_ramsey(self, sequencer):
         # ef ramsey sequences
@@ -429,7 +424,7 @@ class PulseSequences:
         # mm rabi sequences
 
         for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
-            sequencer.new_sequence()
+            sequencer.new_sequence(self)
 
             sequencer.append('m8195a_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in self.expt_cfg['on_qubits']:
