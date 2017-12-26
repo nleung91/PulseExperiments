@@ -41,6 +41,7 @@ class Sequencer:
                              Square(max_amp=sequences.multimodes[qubit_id]['pi_amp'][sequences.sideband_cooling[qubit_id]['mode_id']], flat_len=sequences.multimodes[qubit_id]['pi_len'][sequences.sideband_cooling[qubit_id]['mode_id']],
                                     ramp_sigma_len=5, cutoff_sigma=2, freq=sequences.multimodes[qubit_id]['freq'][sequences.sideband_cooling[qubit_id]['mode_id']], phase=0,
                                     plot=False))
+                self.append('charge%s' % qubit_id, Idle(time=1000))
 
         self.sync_channels_time(sequences.channels)
 
