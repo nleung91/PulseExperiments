@@ -148,7 +148,7 @@ class Sequencer:
             self.end_sequence()
 
             self.new_sequence(sequences)
-            for qubit_id in sequences.expt_cfg['on_qubits']:
+            for qubit_id in sequences.expt_cfg.get('on_qubits',["1","2"]):
                 self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])
             sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
             self.end_sequence()

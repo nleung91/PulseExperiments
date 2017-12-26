@@ -62,6 +62,7 @@ class PulseSequences:
                    cutoff_sigma=2, freq=self.qubit_ef_freq["2"], phase=0, plot=False)}
 
         self.multimodes = self.quantum_device_cfg['multimodes']
+        self.communication = self.quantum_device_cfg['communication']
         self.sideband_cooling = self.quantum_device_cfg['sideband_cooling']
 
     def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
@@ -400,6 +401,59 @@ class PulseSequences:
                                        sigma_len=self.pulse_info[qubit_id]['half_pi_len'], cutoff_sigma=2,
                                        freq=self.qubit_freq[qubit_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'], plot=False))
             self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=False)
+
+    def communication_rabi(self, sequencer):
+        # mm rabi sequences
+
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence(self)
+
+            for qubit_id in self.expt_cfg['on_qubits']:
+                if qubit_id in self.expt_cfg['pi_pulse']:
+                    sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
+                sequencer.append('flux%s'%qubit_id,
+                                 Square(max_amp=self.communication[qubit_id]['pi_amp'], flat_len=rabi_len,
+                                        ramp_sigma_len=5, cutoff_sigma=2,
+                                        freq=self.communication[qubit_id]['freq'], phase=0,
+                                        plot=False))
+
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=False)
+
+    def photon_transfer(self, sequencer):
+        # mm rabi sequences
+
+        for rabi_len in np.arange(self.expt_cfg['receiver_len_start'], self.expt_cfg['receiver_len_stop'], self.expt_cfg['receiver_len_step']):
+            sequencer.new_sequence(self)
+
+            sender_id = self.expt_cfg['sender_id']
+            receiver_id = self.expt_cfg['receiver_id']
+
+            sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
+            sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
+            sequencer.append('flux%s'%sender_id,
+                             Square(max_amp=self.communication[sender_id]['pi_amp'],
+                                    flat_len=rabi_len,
+                                    ramp_sigma_len=5, cutoff_sigma=2,
+                                    freq=self.communication[sender_id]['freq'], phase=0,
+                                    plot=False))
+
+            sequencer.append('flux%s'%receiver_id,
+                             Square(max_amp=self.communication[receiver_id]['pi_amp'], flat_len=rabi_len,
+                                    ramp_sigma_len=5, cutoff_sigma=2,
+                                    freq=self.communication[receiver_id]['freq'], phase=0,
+                                    plot=False))
+
+
+            self.readout(sequencer, self.expt_cfg.get('on_qubits',["1","2"]))
 
             sequencer.end_sequence()
 
