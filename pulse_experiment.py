@@ -249,7 +249,7 @@ class Experiment:
         print('\n')
         print(data_file)
 
-        if self.expt_cfg.get('singleshot', False):
+        if self.expt_cfg.get('singleshot', True):
             self.get_singleshot_data(sequence_length, acquisition_num, data_file, seq_data_file)
         else:
             self.get_avg_data(acquisition_num, data_file, seq_data_file)
