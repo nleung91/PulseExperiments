@@ -108,7 +108,7 @@ class Experiment:
         numAcquisition = int(np.ceil(acquisition_num / 100))
         het_IFreqList = []
 
-        for qubit_id in self.expt_cfg['on_qubits']:
+        for qubit_id in ["1","2"]:
             het_IFreqList += [self.quantum_device_cfg['heterodyne'][qubit_id]['freq']]
 
         single_data1_list = []
@@ -163,8 +163,8 @@ class Experiment:
             with self.slab_file as f:
                 f.append('single_data1', single_data1)
                 f.append('single_data2', single_data2)
-                f.append_line('expt_avg_data_ch1', data_1_list)
-                f.append_line('expt_avg_data_ch2', data_2_list)
+                f.append_line('expt_avg_data_ch1', data_1_avg_list)
+                f.append_line('expt_avg_data_ch2', data_2_avg_list)
                 f.close()
         self.adc.close()
 
