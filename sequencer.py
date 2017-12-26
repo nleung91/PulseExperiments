@@ -41,7 +41,10 @@ class Sequencer:
                              Square(max_amp=sequences.multimodes[qubit_id]['pi_amp'][sequences.sideband_cooling[qubit_id]['mode_id']], flat_len=sequences.multimodes[qubit_id]['pi_len'][sequences.sideband_cooling[qubit_id]['mode_id']],
                                     ramp_sigma_len=5, cutoff_sigma=2, freq=sequences.multimodes[qubit_id]['freq'][sequences.sideband_cooling[qubit_id]['mode_id']], phase=0,
                                     plot=False))
-                self.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
+
+        self.sync_channels_time(sequences.channels)
+
+
 
     def append(self, channel, pulse):
         pulse.generate_pulse_array(t0=self.get_time(channel), dt=self.channels_awg_info[channel]['dt'])
@@ -140,12 +143,10 @@ class Sequencer:
         if sequences.expt_cfg.get('pi_calibration', False):
 
             self.new_sequence(sequences)
-            self.append('m8195a_trig', Ones(time=sequences.hardware_cfg['trig_pulse_len']['m8195a']))
             sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
             self.end_sequence()
 
             self.new_sequence(sequences)
-            self.append('m8195a_trig', Ones(time=sequences.hardware_cfg['trig_pulse_len']['m8195a']))
             for qubit_id in sequences.expt_cfg['on_qubits']:
                 self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])
             sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
