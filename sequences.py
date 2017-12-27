@@ -441,7 +441,7 @@ class PulseSequences:
             sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
             sequencer.append('flux%s'%sender_id,
                              Square(max_amp=self.communication[sender_id]['pi_amp'],
-                                    flat_len=rabi_len,
+                                    flat_len=self.expt_cfg['sender_len'],
                                     ramp_sigma_len=5, cutoff_sigma=2,
                                     freq=self.communication[sender_id]['freq'], phase=0,
                                     plot=False))

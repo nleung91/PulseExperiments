@@ -62,6 +62,7 @@ def qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardwar
                 print("Suggested qubit frequency: %s GHz" % str(real_qubit_freq))
                 print("possible qubit frequency: %s GHz" % str(possible_qubit_freq))
                 print("Suggested flux: %s mA" % str(suggested_flux))
+                print("Max contrast: %s" % str(max(data_list)-min(data_list)))
 
                 freq_offset = ramsey_freq - fitdata[1]
 
@@ -105,3 +106,21 @@ def sideband_rabi_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
         exp.run_experiment(sequences, path, 'sideband_rabi_sweep', seq_data_file, update_awg)
 
         update_awg = False
+
+def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['photon_transfer']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'photon_transfer_sweep', suffix='.h5'))
+
+    sender_len_start = 0
+    sender_len_stop = 1500
+    sender_len_step = 50.0
+
+    for sender_len in np.arange(sender_len_start, sender_len_stop,sender_len_step):
+        experiment_cfg['photon_transfer']['sender_len'] = sender_len
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('photon_transfer')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        exp.run_experiment(sequences, path, 'photon_transfer', seq_data_file)
+
