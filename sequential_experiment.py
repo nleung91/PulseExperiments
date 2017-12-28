@@ -124,3 +124,22 @@ def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
         exp.run_experiment(sequences, path, 'photon_transfer', seq_data_file)
 
+
+
+def sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['sideband_rabi_freq']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'sideband_rabi_freq_amp_sweep', suffix='.h5'))
+
+    amp_start = 0.5
+    amp_stop = 0.2
+    amp_step = -0.01
+
+    for amp in np.arange(amp_start, amp_stop,amp_step):
+        experiment_cfg['sideband_rabi_freq']['amp'] = amp
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('sideband_rabi_freq')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        exp.run_experiment(sequences, path, 'sideband_rabi_freq', seq_data_file)
+
