@@ -113,7 +113,7 @@ class PulseSequences:
                 sequencer.append('charge%s'%qubit_id, self.qubit_pi[qubit_id])
                 sequencer.sync_channels_time(self.channels)
                 sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=10, cutoff_sigma=2, freq=rabi_freq, phase=0,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=5, cutoff_sigma=2, freq=rabi_freq, phase=0,
                                         plot=False))
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
