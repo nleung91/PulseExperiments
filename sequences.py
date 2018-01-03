@@ -8,6 +8,7 @@ except:
 
 import numpy as np
 import visdom
+import os
 
 
 class PulseSequences:
@@ -409,6 +410,7 @@ class PulseSequences:
     def communication_rabi(self, sequencer):
         # mm rabi sequences
 
+
         for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence(self)
 
@@ -416,10 +418,17 @@ class PulseSequences:
                 if qubit_id in self.expt_cfg['pi_pulse']:
                     sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
+
+                if "freq_a" in self.expt_cfg["use_fit"]:
+                    freq_a_p = np.poly1d(np.load(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s.npy'%qubit_id)))
+                    freq = freq_a_p(self.communication[qubit_id]['pi_amp'])
+                else:
+                    freq = self.communication[qubit_id]['freq']
+
                 sequencer.append('flux%s'%qubit_id,
                                  Square(max_amp=self.communication[qubit_id]['pi_amp'], flat_len=rabi_len,
                                         ramp_sigma_len=5, cutoff_sigma=2,
-                                        freq=self.communication[qubit_id]['freq'], phase=0,
+                                        freq=freq, phase=0,
                                         plot=False))
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
@@ -441,7 +450,7 @@ class PulseSequences:
             sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
             sequencer.append('flux%s'%sender_id,
                              Square(max_amp=self.communication[sender_id]['pi_amp'],
-                                    flat_len=rabi_len,
+                                    flat_len=self.expt_cfg['sender_len'], #self.expt_cfg['sender_len']
                                     ramp_sigma_len=5, cutoff_sigma=2,
                                     freq=self.communication[sender_id]['freq'], phase=0,
                                     plot=False))
