@@ -427,7 +427,7 @@ class PulseSequences:
                         freq_a_p = pickle.load(f)
 
                     # freq_a_p = np.poly1d(np.load(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s.npy'%qubit_id)))
-                    freq = freq_a_p(self.communication[qubit_id]['pi_amp'])-0.0008
+                    freq = freq_a_p(self.communication[qubit_id]['pi_amp'])
                 else:
                     freq = self.communication[qubit_id]['freq']
 
