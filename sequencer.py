@@ -164,6 +164,9 @@ class Sequencer:
 
     def plot_sequences(self):
 
+        vis = visdom.Visdom()
+        vis.close()
+
         sequence_id = 0
 
         for sequence in self.multiple_sequences[::20]:

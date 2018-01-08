@@ -636,9 +636,6 @@ class PulseSequences:
 
 
     def get_experiment_sequences(self, experiment):
-        vis = visdom.Visdom()
-        vis.close()
-
         sequencer = Sequencer(self.channels, self.channels_awg, self.awg_info, self.channels_delay)
         self.expt_cfg = self.experiment_cfg[experiment]
 
