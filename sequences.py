@@ -466,7 +466,7 @@ class PulseSequences:
                 with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s.pkl'%receiver_id), 'rb') as f:
                     freq_a_p_rece = pickle.load(f)
 
-                freq_rece = freq_a_p_rece(self.communication[sender_id]['pi_amp'])
+                freq_rece = freq_a_p_rece(self.communication[receiver_id]['pi_amp'])
             else:
                 freq_send = self.communication[sender_id]['freq']
                 freq_rece = self.communication[receiver_id]['freq']
@@ -489,7 +489,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def multimode_rabi(self, sequencer):
         # mm rabi sequences
