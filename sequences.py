@@ -471,12 +471,20 @@ class PulseSequences:
                 freq_send = self.communication[sender_id]['freq']
                 freq_rece = self.communication[receiver_id]['freq']
 
+            if self.expt_cfg['rece_delay'] < 0:
+                sequencer.append('flux%s'%sender_id,
+                                 Idle(time=abs(self.expt_cfg['rece_delay'])))
+
             sequencer.append('flux%s'%sender_id,
                              Square(max_amp=self.communication[sender_id]['pi_amp'],
                                     flat_len=rabi_len, #self.expt_cfg['sender_len']
                                     ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][sender_id]['ramp_sigma_len'], cutoff_sigma=2,
                                     freq=freq_send, phase=0,
                                     plot=False))
+
+            if self.expt_cfg['rece_delay'] > 0:
+                sequencer.append('flux%s'%receiver_id,
+                                 Idle(time=self.expt_cfg['rece_delay']))
 
             sequencer.append('flux%s'%receiver_id,
                              Square(max_amp=self.communication[receiver_id]['pi_amp'], flat_len=rabi_len,
