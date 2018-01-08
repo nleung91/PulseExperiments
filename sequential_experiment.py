@@ -112,18 +112,53 @@ def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path
     data_path = os.path.join(path, 'data/')
     seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'photon_transfer_sweep', suffix='.h5'))
 
-    sender_len_start = 0
-    sender_len_stop = 1500
-    sender_len_step = 50.0
+    sweep = 'sender_a'
 
-    for sender_len in np.arange(sender_len_start, sender_len_stop,sender_len_step):
-        experiment_cfg['photon_transfer']['sender_len'] = sender_len
+    if sweep == 'delay':
+        delay_len_start = -200
+        delay_len_stop = 200
+        delay_len_step = 4.0
+
+        for delay_len in np.arange(delay_len_start, delay_len_stop,delay_len_step):
+            experiment_cfg['photon_transfer']['rece_delay'] = delay_len
+            ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+            sequences = ps.get_experiment_sequences('photon_transfer')
+
+            exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+            exp.run_experiment(sequences, path, 'photon_transfer', seq_data_file)
+
+    elif sweep == 'sender_a':
+        start = 0.6
+        stop = 0.2
+        step = -0.01
+
+        for amp in np.arange(start, stop,step):
+            quantum_device_cfg['communication'][experiment_cfg['photon_transfer']['sender_id']]['pi_amp'] = amp
+            ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+            sequences = ps.get_experiment_sequences('photon_transfer')
+
+            exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+            exp.run_experiment(sequences, path, 'photon_transfer', seq_data_file)
+
+
+def communication_rabi_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['communication_rabi']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'communication_rabi_amp_sweep', suffix='.h5'))
+
+    amp_start = 0.7
+    amp_stop = 0.0
+    amp_step = -0.01
+
+    on_qubit = "2"
+
+    for amp in np.arange(amp_start, amp_stop,amp_step):
+        quantum_device_cfg['communication'][on_qubit]['pi_amp'] = amp
         ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
-        sequences = ps.get_experiment_sequences('photon_transfer')
+        sequences = ps.get_experiment_sequences('communication_rabi')
 
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
-        exp.run_experiment(sequences, path, 'photon_transfer', seq_data_file)
-
+        exp.run_experiment(sequences, path, 'communication_rabi', seq_data_file)
 
 
 def sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
@@ -131,12 +166,13 @@ def sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cf
     data_path = os.path.join(path, 'data/')
     seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'sideband_rabi_freq_amp_sweep', suffix='.h5'))
 
-    amp_start = 0.5
-    amp_stop = 0.2
+    amp_start = 0.75
+    amp_stop = 0.0
     amp_step = -0.01
 
     for amp in np.arange(amp_start, amp_stop,amp_step):
         experiment_cfg['sideband_rabi_freq']['amp'] = amp
+        experiment_cfg['sideband_rabi_freq']['pulse_len'] = 100*amp_start/amp
         ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
         sequences = ps.get_experiment_sequences('sideband_rabi_freq')
 
