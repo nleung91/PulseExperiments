@@ -499,29 +499,24 @@ class PulseSequences:
                 sequencer.append('flux%s'%sender_id,
                                  Idle(time=abs(self.expt_cfg['rece_delay'])))
 
-            sequencer.append('flux%s'%sender_id,
-                             Square(max_amp=self.communication[sender_id]['pi_amp'],
-                                    flat_len=rabi_len, #self.expt_cfg['sender_len']
-                                    ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][sender_id]['ramp_sigma_len'], cutoff_sigma=2,
-                                    freq=freq_send, phase=0,
-                                    plot=False))
+            flux_pulse = self.communication_flux_pi[sender_id]
+            flux_pulse.len = rabi_len
+            sequencer.append('flux%s'%sender_id,flux_pulse)
 
             if self.expt_cfg['rece_delay'] > 0:
                 sequencer.append('flux%s'%receiver_id,
                                  Idle(time=self.expt_cfg['rece_delay']))
 
-            sequencer.append('flux%s'%receiver_id,
-                             Square(max_amp=self.communication[receiver_id]['pi_amp'], flat_len=rabi_len,
-                                    ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][receiver_id]['ramp_sigma_len'], cutoff_sigma=2,
-                                    freq=freq_rece, phase=0,
-                                    plot=False))
+            flux_pulse = self.communication_flux_pi[receiver_id]
+            flux_pulse.len = rabi_len
+            sequencer.append('flux%s'%receiver_id,flux_pulse)
 
 
             self.readout(sequencer, self.expt_cfg.get('on_qubits',["1","2"]))
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def multimode_rabi(self, sequencer):
         # mm rabi sequences
