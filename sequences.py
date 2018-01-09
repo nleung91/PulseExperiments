@@ -66,6 +66,25 @@ class PulseSequences:
         self.communication = self.quantum_device_cfg['communication']
         self.sideband_cooling = self.quantum_device_cfg['sideband_cooling']
 
+
+        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/1.pkl'), 'rb') as f:
+            freq_a_p_1 = pickle.load(f)
+
+        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/2.pkl'), 'rb') as f:
+            freq_a_p_2 = pickle.load(f)
+
+        gauss_z = np.linspace(-2,2,50)
+        gauss_envelop = np.exp(-gauss_z**2)
+
+        A_list_1 = self.communication['1']['pi_amp'] * gauss_envelop
+        A_list_2 = self.communication['2']['pi_amp'] * gauss_envelop
+
+        self.communication_flux_pi = {
+            "1": ARB_freq_a(A_list = A_list_1, B_list = np.zeros_like(A_list_1), len=100, freq_a_fit = freq_a_p_1, phase = 0),
+            "2": ARB_freq_a(A_list = A_list_2, B_list = np.zeros_like(A_list_2), len=100, freq_a_fit = freq_a_p_2, phase = 0)
+        }
+
+
     def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
         self.set_parameters(quantum_device_cfg, experiment_cfg, hardware_cfg)
 
@@ -431,15 +450,16 @@ class PulseSequences:
                 else:
                     freq = self.communication[qubit_id]['freq']
 
-                if False:
-                    sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.communication[qubit_id]['pi_amp'], flat_len=rabi_len,
-                                        ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'], cutoff_sigma=2,
-                                        freq=freq, phase=0,
-                                        plot=False))
-                elif True:
-                    sequencer.append('flux%s'%qubit_id,
-                                 ARB_freq_a(A_list = [0.2,0.5,0.5, 0.2], B_list = [0,0,0,0], len=rabi_len, freq_a_fit = freq_a_p, phase = 0))
+                # if False:
+                #     sequencer.append('flux%s'%qubit_id,
+                #                  Square(max_amp=self.communication[qubit_id]['pi_amp'], flat_len=rabi_len,
+                #                         ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'], cutoff_sigma=2,
+                #                         freq=freq, phase=0,
+                #                         plot=False))
+                # elif True:
+                flux_pulse = self.communication_flux_pi[qubit_id]
+                flux_pulse.len = rabi_len
+                sequencer.append('flux%s'%qubit_id,flux_pulse)
 
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
