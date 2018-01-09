@@ -1,9 +1,9 @@
 try:
     from .sequencer import Sequencer
-    from .pulse_classes import Gauss, Idle, Ones, Square, DRAG
+    from .pulse_classes import Gauss, Idle, Ones, Square, DRAG, ARB_freq_a
 except:
     from sequencer import Sequencer
-    from pulse_classes import Gauss, Idle, Ones, Square, DRAG
+    from pulse_classes import Gauss, Idle, Ones, Square, DRAG, ARB_freq_a
 # from qutip_experiment import run_qutip_experiment
 
 import numpy as np
@@ -431,18 +431,22 @@ class PulseSequences:
                 else:
                     freq = self.communication[qubit_id]['freq']
 
-                sequencer.append('flux%s'%qubit_id,
+                if False:
+                    sequencer.append('flux%s'%qubit_id,
                                  Square(max_amp=self.communication[qubit_id]['pi_amp'], flat_len=rabi_len,
                                         ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'], cutoff_sigma=2,
                                         freq=freq, phase=0,
                                         plot=False))
+                elif True:
+                    sequencer.append('flux%s'%qubit_id,
+                                 ARB_freq_a(A_list = [0.2,0.5,0.5, 0.2], B_list = [0,0,0,0], len=rabi_len, freq_a_fit = freq_a_p, phase = 0))
 
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def photon_transfer(self, sequencer):
         # mm rabi sequences

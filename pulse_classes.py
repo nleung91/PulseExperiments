@@ -163,6 +163,47 @@ class ARB(Pulse):
         return self.len
 
 
+class ARB_freq_a(Pulse):
+    def __init__(self, A_list, B_list, len, freq_a_fit, phase, dt=None, plot=False):
+        self.A_list = A_list
+        self.B_list = B_list
+        self.len = len
+        self.freq_a_fit = freq_a_fit
+        self.phase = phase
+        self.dt = dt
+        self.plot = plot
+
+        self.t0 = 0
+
+    def get_pulse_array(self):
+        t_array_A_list = np.linspace(self.t_array[0], self.t_array[-1], num=len(self.A_list))
+        t_array_B_list = np.linspace(self.t_array[0], self.t_array[-1], num=len(self.B_list))
+
+        tck_A = interpolate.splrep(t_array_A_list, self.A_list)
+        tck_B = interpolate.splrep(t_array_B_list, self.B_list)
+
+        pulse_array_x = interpolate.splev(self.t_array, tck_A, der=0)
+        pulse_array_y = interpolate.splev(self.t_array, tck_B, der=0)
+
+        freq_array_x = self.freq_a_fit(pulse_array_x)
+        freq_array_y = self.freq_a_fit(pulse_array_y)
+
+        # print(freq_array_x)
+        # print(freq_array_y)
+        # print(self.dt)
+
+        phase_array_x = 2*np.pi*np.cumsum(freq_array_x*self.dt) + self.phase
+        phase_array_y = 2*np.pi*np.cumsum(freq_array_y*self.dt) + self.phase
+
+        pulse_array = pulse_array_x * np.cos(phase_array_x) + \
+                      - pulse_array_y * np.sin(phase_array_y)
+
+        return pulse_array
+
+    def get_length(self):
+        return self.len
+
+
 class Ones(Pulse):
     def __init__(self, time, dt=None, plot=False):
         self.time = time
