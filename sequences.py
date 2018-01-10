@@ -73,7 +73,7 @@ class PulseSequences:
         with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/2.pkl'), 'rb') as f:
             freq_a_p_2 = pickle.load(f)
 
-        gauss_z = np.linspace(-2,2,50)
+        gauss_z = np.linspace(-2,2,20)
         gauss_envelop = np.exp(-gauss_z**2)
 
         A_list_1 = self.communication['1']['pi_amp'] * gauss_envelop
@@ -509,6 +509,7 @@ class PulseSequences:
 
             flux_pulse = self.communication_flux_pi[receiver_id]
             flux_pulse.len = rabi_len
+            flux_pulse.plot = True
             sequencer.append('flux%s'%receiver_id,flux_pulse)
 
 
@@ -516,7 +517,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=True)
+        return sequencer.complete(self, plot=False)
 
     def multimode_rabi(self, sequencer):
         # mm rabi sequences
@@ -655,6 +656,9 @@ class PulseSequences:
 
 
     def get_experiment_sequences(self, experiment):
+        vis = visdom.Visdom()
+        vis.close()
+        
         sequencer = Sequencer(self.channels, self.channels_awg, self.awg_info, self.channels_delay)
         self.expt_cfg = self.experiment_cfg[experiment]
 

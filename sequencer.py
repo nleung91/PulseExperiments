@@ -1,4 +1,5 @@
 import numpy as np
+import visdom
 
 try:
     from .pulse_classes import Gauss, Idle, Ones, Square
