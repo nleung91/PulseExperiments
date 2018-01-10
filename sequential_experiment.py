@@ -119,7 +119,7 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
 
     iteration_num = 20000
 
-    expt_num = 100
+    expt_num = 10
 
     A_list_len = 20
 
