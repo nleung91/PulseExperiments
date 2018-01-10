@@ -9,6 +9,8 @@ from slab.dsfit import fitdecaysin
 
 from skopt import Optimizer
 
+import pickle
+
 def histogram(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['histogram']
     data_path = os.path.join(path, 'data/')
@@ -112,15 +114,16 @@ def sideband_rabi_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
 def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['photon_transfer_arb']
     data_path = os.path.join(path, 'data/')
-    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'photon_transfer_optimize', suffix='.h5'))
+    filename = get_next_filename(data_path, 'photon_transfer_optimize', suffix='.h5')
+    seq_data_file = os.path.join(data_path, filename)
 
-    iteration_num = 2
+    iteration_num = 20000
 
-    expt_num = 10
+    expt_num = 100
 
     A_list_len = 20
 
-    max_a = {"1":0.6, "2":0.7}
+    max_a = {"1":0.6, "2":0.6}
     max_len = 500
 
     limit_list = []
@@ -184,6 +187,10 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
             print(f_val_list)
 
         opt.tell(next_x_list, f_val_list)
+
+        with open(os.path.join(path,'optimizer/%s.pkl' %filename.split('.')[0]), 'wb') as f:
+            pickle.dump(opt, f)
+
 
 def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['photon_transfer']
