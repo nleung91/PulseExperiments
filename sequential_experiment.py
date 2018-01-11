@@ -119,28 +119,33 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
 
     iteration_num = 20000
 
-    expt_num = 10
+    sequence_num = 2
+    expt_num = 2*expt_cfg['repeat']
 
-    A_list_len = 20
+    A_list_len = 6
 
     max_a = {"1":0.6, "2":0.6}
-    max_len = 500
+    max_len = 1000
 
     limit_list = []
     limit_list += [(0.0, max_a[expt_cfg['sender_id']])]*A_list_len
     limit_list += [(0.0, max_a[expt_cfg['receiver_id']])]*A_list_len
-    limit_list += [(0.0,max_len)] * 2
+    limit_list += [(10.0,max_len)] * 2
 
-    gauss_z = np.linspace(-2,2,20)
+    ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+
+    opt = Optimizer(limit_list, "GP", acq_optimizer="auto")
+
+    gauss_z = np.linspace(-2,2,A_list_len)
     gauss_envelop = np.exp(-gauss_z**2)
     init_send_A_list = list(quantum_device_cfg['communication'][expt_cfg['sender_id']]['pi_amp'] * gauss_envelop)
     init_rece_A_list = list(quantum_device_cfg['communication'][expt_cfg['receiver_id']]['pi_amp'] * gauss_envelop)
     init_send_len = [300]
     init_rece_len = [300]
 
-    init_x = [init_send_A_list + init_rece_A_list + init_send_len + init_rece_len] * expt_num
+    init_x = [init_send_A_list + init_rece_A_list + init_send_len + init_rece_len] * sequence_num
 
-    ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+
 
     x_array = np.array(init_x)
 
@@ -150,7 +155,7 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
     rece_len = x_array[:,-1]
 
 
-    sequences = ps.get_experiment_sequences('photon_transfer_arb', expt_num = expt_num,
+    sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
                                                 send_A_list = send_A_list, rece_A_list = rece_A_list,
                                                 send_len = send_len, rece_len = rece_len)
 
@@ -160,13 +165,23 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
     with SlabFile(data_file) as a:
         f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
         print(f_val_list)
+        print(f_val_list[::2])
+        print(f_val_list[1::2])
 
-    opt = Optimizer(limit_list, "GP", acq_optimizer="sampling")
-    opt.tell(init_x, f_val_list)
+    f_val_all = []
+
+    for ii in range(sequence_num):
+        f_val_all += [np.mean(f_val_list[ii::sequence_num])]
+
+    print(f_val_all)
+    opt.tell(init_x, f_val_all)
+
+
+
 
     for iteration in range(iteration_num):
 
-        next_x_list = opt.ask(expt_num)
+        next_x_list = opt.ask(sequence_num,strategy='cl_max')
 
         # do the experiment
         x_array = np.array(next_x_list)
@@ -175,7 +190,7 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
         rece_A_list = x_array[:,A_list_len:2*A_list_len]
         send_len = x_array[:,-2]
         rece_len = x_array[:,-1]
-        sequences = ps.get_experiment_sequences('photon_transfer_arb', expt_num = expt_num,
+        sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
                                                 send_A_list = send_A_list, rece_A_list = rece_A_list,
                                                 send_len = send_len, rece_len = rece_len)
 
@@ -185,11 +200,25 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
         with SlabFile(data_file) as a:
             f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
             print(f_val_list)
+            print(f_val_list[::2])
+            print(f_val_list[1::2])
 
-        opt.tell(next_x_list, f_val_list)
+        f_val_all = []
+
+        for ii in range(sequence_num):
+            f_val_all += [np.mean(f_val_list[ii::sequence_num])]
+
+        print(f_val_all)
+
+        opt.tell(next_x_list, f_val_all)
 
         with open(os.path.join(path,'optimizer/%s.pkl' %filename.split('.')[0]), 'wb') as f:
             pickle.dump(opt, f)
+
+
+        frequency_recalibrate_cycle = 15
+        if iteration % frequency_recalibrate_cycle == 0:
+            qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardware_cfg, path)
 
 
 def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
