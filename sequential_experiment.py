@@ -226,15 +226,14 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
     for iteration in range(iteration_num):
 
         experiment_cfg['photon_transfer_arb']['repeat'] = 1
-        experiment_cfg['photon_transfer_arb']['acquisition_num'] = 2000
 
         X_cand = opt.space.transform(opt.space.rvs(n_samples=10000))
         X_cand_predict = opt.models[-1].predict(X_cand)
         X_cand_argsort = np.argsort(X_cand_predict)
-        X_cand_sort = [X_cand[ii] for ii in X_cand_argsort]
+        X_cand_sort = np.array([X_cand[ii] for ii in X_cand_argsort])
         X_cand_top = X_cand_sort[:expt_num]
 
-        next_x_list = X_cand_top
+        next_x_list = opt.space.inverse_transform(X_cand_top)
 
         # do the experiment
         x_array = np.array(next_x_list)
