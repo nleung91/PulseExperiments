@@ -144,7 +144,22 @@ class PulseSequences:
     def sideband_rabi_freq(self, sequencer):
         # sideband rabi freq sweep
         rabi_len = self.expt_cfg['pulse_len']
-        for rabi_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+
+        if "around_mm":
+
+            qubit_id = self.expt_cfg['on_qubits'][0]
+            mm_freq_list = self.quantum_device_cfg['multimodes'][qubit_id]['freq']
+            freq_list_all = []
+            for mm_freq in mm_freq_list:
+                freq_list_all += [np.arange(mm_freq-self.expt_cfg['freq_range'],mm_freq+self.expt_cfg['freq_range'],self.expt_cfg['step'])]
+
+            freq_array = np.hstack(np.array(freq_list_all))
+
+            print(freq_array)
+        else:
+            freq_array = np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step'])
+
+        for rabi_freq in freq_array:
             sequencer.new_sequence(self)
 
             for qubit_id in self.expt_cfg['on_qubits']:
