@@ -145,7 +145,7 @@ class PulseSequences:
         # sideband rabi freq sweep
         rabi_len = self.expt_cfg['pulse_len']
 
-        if "around_mm":
+        if self.expt_cfg["around_mm"]:
 
             qubit_id = self.expt_cfg['on_qubits'][0]
             mm_freq_list = self.quantum_device_cfg['multimodes'][qubit_id]['freq']
@@ -155,7 +155,7 @@ class PulseSequences:
 
             freq_array = np.hstack(np.array(freq_list_all))
 
-            print(freq_array)
+            # print(freq_array)
         else:
             freq_array = np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step'])
 
@@ -586,7 +586,7 @@ class PulseSequences:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
+                                 Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id], flat_len=rabi_len, ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
                                         cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id], phase=0,
                                         plot=False))
 
