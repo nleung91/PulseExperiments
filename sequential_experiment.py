@@ -190,7 +190,7 @@ def multimode_dc_offset(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
                 fitdata = fitdecaysin(expt_pts, data_list, showfit=False)
                 print("Oscillation frequency: %s GHz" % str(fitdata[1]))
 
-                quantum_device_cfg['multimodes'][qubit_id]['dc_offset'][on_mms] = round(-fitdata[1],4)
+                quantum_device_cfg['multimodes'][qubit_id]['dc_offset'][on_mms] = round(-fitdata[1],5)
                 with open(os.path.join(path, 'quantum_device_config.json'), 'w') as f:
                     json.dump(quantum_device_cfg, f)
 
