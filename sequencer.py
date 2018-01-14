@@ -39,7 +39,7 @@ class Sequencer:
             if sequences.sideband_cooling[qubit_id]['cool']:
                 self.append('flux%s'%qubit_id,
                              Square(max_amp=sequences.multimodes[qubit_id]['pi_amp'][sequences.sideband_cooling[qubit_id]['mode_id']], flat_len=sequences.multimodes[qubit_id]['pi_len'][sequences.sideband_cooling[qubit_id]['mode_id']],
-                                    ramp_sigma_len=5, cutoff_sigma=2, freq=sequences.multimodes[qubit_id]['freq'][sequences.sideband_cooling[qubit_id]['mode_id']], phase=0,
+                                    ramp_sigma_len=sequences.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'], cutoff_sigma=2, freq=sequences.multimodes[qubit_id]['freq'][sequences.sideband_cooling[qubit_id]['mode_id']], phase=0,
                                     plot=False))
                 self.append('charge%s' % qubit_id, Idle(time=1000))
 
