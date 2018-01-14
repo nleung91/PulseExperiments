@@ -137,7 +137,7 @@ def multimode_rabi_pi_calibrate(quantum_device_cfg, experiment_cfg, hardware_cfg
                 data_list = np.array(a['expt_avg_data_ch%s'%qubit_id])
                 fitdata = fitdecaysin(expt_pts[1:],data_list[1:],showfit=True)
 
-                pi_length = round((-fitdata[2]%180 + 90)/(360*fitdata[1]),4)
+                pi_length = round((-fitdata[2]%180 + 90)/(360*fitdata[1]),5)
                 print("Flux pi length ge: %s" %pi_length)
 
                 quantum_device_cfg['multimodes'][qubit_id]['pi_len'][on_mms] = pi_length
@@ -194,6 +194,23 @@ def multimode_dc_offset(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
                 with open(os.path.join(path, 'quantum_device_config.json'), 'w') as f:
                     json.dump(quantum_device_cfg, f)
 
+def multimode_ramsey(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['multimode_ramsey']
+    data_path = os.path.join(path, 'data/')
+    on_qubits = expt_cfg['on_qubits']
+
+    on_mms_list = np.arange(1,9)
+
+    for on_mms in on_mms_list:
+
+        for qubit_id in expt_cfg['on_qubits']:
+            experiment_cfg['multimode_ramsey']['on_mms'][qubit_id] = int(on_mms)
+
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('multimode_ramsey')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        data_file = exp.run_experiment(sequences, path, 'multimode_ramsey')
 
 
 def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
