@@ -638,7 +638,7 @@ class PulseSequences:
                 sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
                 sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id], flat_len=self.multimodes[qubit_id]['pi_len'][mm_id], ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'], cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id], phase=0*2*np.pi*ramsey_len*(self.expt_cfg['ramsey_freq']+self.quantum_device_cfg['multimodes']['dc_offset'][mm_id]),
+                                 Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id], flat_len=self.multimodes[qubit_id]['pi_len'][mm_id], ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'], cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id], phase=0*2*np.pi*ramsey_len*(self.expt_cfg['ramsey_freq']+self.quantum_device_cfg['multimodes'][qubit_id]['dc_offset'][mm_id]),
                                         plot=False))
                 sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
