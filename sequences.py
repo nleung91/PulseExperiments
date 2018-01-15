@@ -345,7 +345,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def ef_ramsey(self, sequencer):
         # ef ramsey sequences
@@ -516,7 +516,7 @@ class PulseSequences:
 
             flux_pulse = self.communication_flux_pi[sender_id]
             flux_pulse.len = rabi_len
-            flux_pulse.plot = True
+            # flux_pulse.plot = True
             if 'send_A_list' in kwargs:
                 flux_pulse.A_list = kwargs['send_A_list']
             sequencer.append('flux%s'%sender_id,flux_pulse)
@@ -527,7 +527,7 @@ class PulseSequences:
 
             flux_pulse = self.communication_flux_pi[receiver_id]
             flux_pulse.len = rabi_len
-            flux_pulse.plot = True
+            # flux_pulse.plot = True
             if 'rece_A_list' in kwargs:
                 flux_pulse.A_list = kwargs['rece_A_list']
             sequencer.append('flux%s'%receiver_id,flux_pulse)

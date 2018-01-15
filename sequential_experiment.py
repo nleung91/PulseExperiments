@@ -269,10 +269,10 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
     use_prev_model = True
 
     if use_prev_model:
-        with open(os.path.join(path,'optimizer/00033_photon_transfer_optimize.pkl'), 'rb') as f:
+        with open(os.path.join(path,'optimizer/00038_photon_transfer_optimize.pkl'), 'rb') as f:
             opt = pickle.load(f)
     else:
-        opt = Optimizer(limit_list, "GP", acq_optimizer="auto")
+        opt = Optimizer(limit_list, "GBRT", acq_optimizer="auto")
 
     gauss_z = np.linspace(-2,2,A_list_len)
     gauss_envelop = np.exp(-gauss_z**2)
@@ -314,7 +314,8 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
     print(f_val_all)
     opt.tell(init_x, f_val_all)
 
-
+    if use_prev_model:
+        init_iteration_num = 0
 
 
     for iteration in range(init_iteration_num):
