@@ -254,9 +254,9 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
     sequence_num = 10
     expt_num = sequence_num*expt_cfg['repeat']
 
-    A_list_len = 6
+    A_list_len = 10
 
-    max_a = {"1":0.6, "2":0.6}
+    max_a = {"1":0.6, "2":0.65}
     max_len = 1000
 
     limit_list = []
@@ -266,53 +266,53 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
 
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
 
-    use_prev_model = True
+    use_prev_model = False
 
     if use_prev_model:
-        with open(os.path.join(path,'optimizer/00038_photon_transfer_optimize.pkl'), 'rb') as f:
+        with open(os.path.join(path,'optimizer/00041_photon_transfer_optimize.pkl'), 'rb') as f:
             opt = pickle.load(f)
     else:
         opt = Optimizer(limit_list, "GBRT", acq_optimizer="auto")
 
-    gauss_z = np.linspace(-2,2,A_list_len)
-    gauss_envelop = np.exp(-gauss_z**2)
-    init_send_A_list = list(quantum_device_cfg['communication'][expt_cfg['sender_id']]['pi_amp'] * gauss_envelop)
-    init_rece_A_list = list(quantum_device_cfg['communication'][expt_cfg['receiver_id']]['pi_amp'] * gauss_envelop)
-    init_send_len = [300]
-    init_rece_len = [300]
+        gauss_z = np.linspace(-2,2,A_list_len)
+        gauss_envelop = np.exp(-gauss_z**2)
+        init_send_A_list = list(quantum_device_cfg['communication'][expt_cfg['sender_id']]['pi_amp'] * gauss_envelop)
+        init_rece_A_list = list(quantum_device_cfg['communication'][expt_cfg['receiver_id']]['pi_amp'] * gauss_envelop)
+        init_send_len = [300]
+        init_rece_len = [300]
 
-    init_x = [init_send_A_list + init_rece_A_list + init_send_len + init_rece_len] * sequence_num
-
-
-
-    x_array = np.array(init_x)
-
-    send_A_list = x_array[:,:A_list_len]
-    rece_A_list = x_array[:,A_list_len:2*A_list_len]
-    send_len = x_array[:,-2]
-    rece_len = x_array[:,-1]
+        init_x = [init_send_A_list + init_rece_A_list + init_send_len + init_rece_len] * sequence_num
 
 
-    sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
-                                                send_A_list = send_A_list, rece_A_list = rece_A_list,
-                                                send_len = send_len, rece_len = rece_len)
 
-    exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
-    data_file = exp.run_experiment(sequences, path, 'photon_transfer_arb', seq_data_file)
+        x_array = np.array(init_x)
 
-    with SlabFile(data_file) as a:
-        f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
-        print(f_val_list)
-        print(f_val_list[::2])
-        print(f_val_list[1::2])
+        send_A_list = x_array[:,:A_list_len]
+        rece_A_list = x_array[:,A_list_len:2*A_list_len]
+        send_len = x_array[:,-2]
+        rece_len = x_array[:,-1]
 
-    f_val_all = []
 
-    for ii in range(sequence_num):
-        f_val_all += [np.mean(f_val_list[ii::sequence_num])]
+        sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
+                                                    send_A_list = send_A_list, rece_A_list = rece_A_list,
+                                                    send_len = send_len, rece_len = rece_len)
 
-    print(f_val_all)
-    opt.tell(init_x, f_val_all)
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        data_file = exp.run_experiment(sequences, path, 'photon_transfer_arb', seq_data_file)
+
+        with SlabFile(data_file) as a:
+            f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
+            print(f_val_list)
+            print(f_val_list[::2])
+            print(f_val_list[1::2])
+
+        f_val_all = []
+
+        for ii in range(sequence_num):
+            f_val_all += [np.mean(f_val_list[ii::sequence_num])]
+
+        print(f_val_all)
+        opt.tell(init_x, f_val_all)
 
     if use_prev_model:
         init_iteration_num = 0
@@ -364,7 +364,7 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
 
         experiment_cfg['photon_transfer_arb']['repeat'] = 1
 
-        X_cand = opt.space.transform(opt.space.rvs(n_samples=100000))
+        X_cand = opt.space.transform(opt.space.rvs(n_samples=1000000))
         X_cand_predict = opt.models[-1].predict(X_cand)
         X_cand_argsort = np.argsort(X_cand_predict)
         X_cand_sort = np.array([X_cand[ii] for ii in X_cand_argsort])
