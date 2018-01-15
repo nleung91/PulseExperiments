@@ -213,6 +213,34 @@ def multimode_ramsey(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
         data_file = exp.run_experiment(sequences, path, 'multimode_ramsey')
 
 
+def sideband_cooling_test(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['ef_rabi']
+    data_path = os.path.join(path, 'data/')
+    on_qubits = expt_cfg['on_qubits']
+
+
+    on_mms_list = np.arange(1,9)
+
+    for on_mms in on_mms_list:
+
+        for qubit_id in expt_cfg['on_qubits']:
+            quantum_device_cfg['sideband_cooling'][qubit_id]['cool'] = True
+            quantum_device_cfg['sideband_cooling'][qubit_id]['mode_id'] = int(on_mms)
+
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('ef_rabi')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        data_file = exp.run_experiment(sequences, path, 'ef_rabi')
+
+
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('ramsey')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        data_file = exp.run_experiment(sequences, path, 'ramsey')
+
+
 def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['photon_transfer_arb']
     data_path = os.path.join(path, 'data/')
@@ -238,7 +266,13 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
 
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
 
-    opt = Optimizer(limit_list, "GP", acq_optimizer="auto")
+    use_prev_model = True
+
+    if use_prev_model:
+        with open(os.path.join(path,'optimizer/00033_photon_transfer_optimize.pkl'), 'rb') as f:
+            opt = pickle.load(f)
+    else:
+        opt = Optimizer(limit_list, "GP", acq_optimizer="auto")
 
     gauss_z = np.linspace(-2,2,A_list_len)
     gauss_envelop = np.exp(-gauss_z**2)
@@ -329,7 +363,7 @@ def photon_transfer_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, p
 
         experiment_cfg['photon_transfer_arb']['repeat'] = 1
 
-        X_cand = opt.space.transform(opt.space.rvs(n_samples=10000))
+        X_cand = opt.space.transform(opt.space.rvs(n_samples=100000))
         X_cand_predict = opt.models[-1].predict(X_cand)
         X_cand_argsort = np.argsort(X_cand_predict)
         X_cand_sort = np.array([X_cand[ii] for ii in X_cand_argsort])
