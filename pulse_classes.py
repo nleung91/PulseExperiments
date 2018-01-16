@@ -164,12 +164,13 @@ class ARB(Pulse):
 
 
 class ARB_freq_a(Pulse):
-    def __init__(self, A_list, B_list, len, freq_a_fit, phase, dt=None, plot=False):
+    def __init__(self, A_list, B_list, len, freq_a_fit, phase, delta_freq = 0, dt=None, plot=False):
         self.A_list = A_list
         self.B_list = B_list
         self.len = len
         self.freq_a_fit = freq_a_fit
         self.phase = phase
+        self.delta_freq = delta_freq
         self.dt = dt
         self.plot = plot
 
@@ -190,8 +191,8 @@ class ARB_freq_a(Pulse):
         pulse_array_x = np.interp(self.t_array,t_array_A_list,self.A_list)
         pulse_array_y = np.interp(self.t_array,t_array_B_list,self.B_list)
 
-        freq_array_x = self.freq_a_fit(pulse_array_x)
-        freq_array_y = self.freq_a_fit(pulse_array_y)
+        freq_array_x = self.freq_a_fit(pulse_array_x) + self.delta_freq
+        freq_array_y = self.freq_a_fit(pulse_array_y) + self.delta_freq
 
         # print(freq_array_x)
         # print(freq_array_y)
