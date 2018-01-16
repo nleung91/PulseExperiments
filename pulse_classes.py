@@ -179,11 +179,16 @@ class ARB_freq_a(Pulse):
         t_array_A_list = np.linspace(self.t_array[0], self.t_array[-1], num=len(self.A_list))
         t_array_B_list = np.linspace(self.t_array[0], self.t_array[-1], num=len(self.B_list))
 
-        tck_A = interpolate.splrep(t_array_A_list, self.A_list)
-        tck_B = interpolate.splrep(t_array_B_list, self.B_list)
+        # # spline
+        # tck_A = interpolate.splrep(t_array_A_list, self.A_list)
+        # tck_B = interpolate.splrep(t_array_B_list, self.B_list)
+        #
+        # pulse_array_x = interpolate.splev(self.t_array, tck_A, der=0)
+        # pulse_array_y = interpolate.splev(self.t_array, tck_B, der=0)
 
-        pulse_array_x = interpolate.splev(self.t_array, tck_A, der=0)
-        pulse_array_y = interpolate.splev(self.t_array, tck_B, der=0)
+        # linear interpolation
+        pulse_array_x = np.interp(self.t_array,t_array_A_list,self.A_list)
+        pulse_array_y = np.interp(self.t_array,t_array_B_list,self.B_list)
 
         freq_array_x = self.freq_a_fit(pulse_array_x)
         freq_array_y = self.freq_a_fit(pulse_array_y)

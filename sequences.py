@@ -76,8 +76,8 @@ class PulseSequences:
         gauss_z = np.linspace(-2,2,20)
         gauss_envelop = np.exp(-gauss_z**2)
 
-        A_list_1 = self.communication['1']['pi_amp'] * gauss_envelop
-        A_list_2 = self.communication['2']['pi_amp'] * gauss_envelop
+        A_list_1 = self.communication['1']['pi_amp'] * np.ones_like(gauss_envelop)
+        A_list_2 = self.communication['2']['pi_amp'] * np.ones_like(gauss_envelop)
 
         self.communication_flux_pi = {
             "1": ARB_freq_a(A_list = A_list_1, B_list = np.zeros_like(A_list_1), len=100, freq_a_fit = freq_a_p_1, phase = 0),
