@@ -80,8 +80,8 @@ class PulseSequences:
         A_list_2 = self.communication['2']['pi_amp'] * np.ones_like(gauss_envelop)
 
         self.communication_flux_pi = {
-            "1": ARB_freq_a(A_list = A_list_1, B_list = np.zeros_like(A_list_1), len=100, freq_a_fit = freq_a_p_1, phase = 0),
-            "2": ARB_freq_a(A_list = A_list_2, B_list = np.zeros_like(A_list_2), len=100, freq_a_fit = freq_a_p_2, phase = 0)
+            "1": ARB_freq_a(A_list = A_list_1, B_list = np.zeros_like(A_list_1), len=self.communication['1']['pi_len'], freq_a_fit = freq_a_p_1, phase = 0),
+            "2": ARB_freq_a(A_list = A_list_2, B_list = np.zeros_like(A_list_2), len=self.communication['2']['pi_len'], freq_a_fit = freq_a_p_2, phase = 0)
         }
 
 
@@ -685,6 +685,25 @@ class PulseSequences:
                     sequencer.append('charge%s' % qubit_id,
                                      Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_amp'], sigma_len=self.pulse_info[qubit_id]['half_pi_len'],
                    cutoff_sigma=2, freq=self.qubit_freq[qubit_id], phase=2*np.pi*ramsey_len*(self.expt_cfg['ramsey_freq']+self.quantum_device_cfg['multimodes']['dc_offset'][mm_id]), plot=False))
+
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=False)
+
+
+    def rabi_transfer(self, sequencer):
+        # rabi sequences
+
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence(self)
+
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' % qubit_id,
+                                 Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len, cutoff_sigma=2,
+                                       freq=self.qubit_freq[qubit_id], phase=0,
+                                       plot=False))
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
