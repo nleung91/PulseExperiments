@@ -11,6 +11,8 @@ import visdom
 import os
 import pickle
 
+import copy
+
 class PulseSequences:
     # channels and awgs
 
@@ -695,21 +697,26 @@ class PulseSequences:
 
     def rabi_transfer(self, sequencer):
         # rabi sequences
+        sender_id = self.expt_cfg['sender_id']
+        receiver_id = self.expt_cfg['receiver_id']
 
         for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
             sequencer.new_sequence(self)
 
-            for qubit_id in self.expt_cfg['on_qubits']:
-                sequencer.append('charge%s' % qubit_id,
-                                 Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len, cutoff_sigma=2,
-                                       freq=self.qubit_freq[qubit_id], phase=0,
-                                       plot=False))
+            rabi_pulse = copy.copy(self.qubit_pi[sender_id])
+            rabi_pulse.sigma_len = rabi_len
 
-            self.readout(sequencer, self.expt_cfg['on_qubits'])
+            sequencer.append('charge%s' % sender_id, rabi_pulse)
+            sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
+            sequencer.append('flux%s'%sender_id,self.communication_flux_pi[sender_id])
+            sequencer.append('flux%s'%receiver_id,self.communication_flux_pi[receiver_id])
+
+
+            self.readout(sequencer)
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def alazar_test(self, sequencer):
         # drag_rabi sequences
