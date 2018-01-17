@@ -559,8 +559,8 @@ class PulseSequences:
                 # flux_pulse.plot = True if repeat_id == 0 else False
                 if 'send_A_list' in kwargs:
                     flux_pulse.A_list = kwargs['send_A_list'][expt_id]
-                if 'delta_freq_A' in kwargs:
-                    flux_pulse.delta_freq = kwargs['delta_freq_A']
+                if 'delta_freq_send' in kwargs:
+                    flux_pulse.delta_freq = kwargs['delta_freq_send'][expt_id]
                 sequencer.append('flux%s'%sender_id,flux_pulse)
 
                 flux_pulse = self.communication_flux_pi[receiver_id]
@@ -568,8 +568,8 @@ class PulseSequences:
                 # flux_pulse.plot = True if repeat_id == 0 else False
                 if 'rece_A_list' in kwargs:
                     flux_pulse.A_list = kwargs['rece_A_list'][expt_id]
-                if 'delta_freq_B' in kwargs:
-                    flux_pulse.delta_freq = kwargs['delta_freq_B']
+                if 'delta_freq_rece' in kwargs:
+                    flux_pulse.delta_freq = kwargs['delta_freq_rece'][expt_id]
                 sequencer.append('flux%s'%receiver_id,flux_pulse)
 
 
