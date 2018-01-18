@@ -512,17 +512,17 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
 
     max_a = {"1":0.5, "2":0.65}
     max_len = 300
-    max_delta_freq = 0.0005
+    # max_delta_freq = 0.0005
 
     limit_list = []
-    limit_list += [(0.3, max_a[expt_cfg['sender_id']])]
+    limit_list += [(0.60, max_a[expt_cfg['sender_id']])]
     limit_list += [(0.3, max_a[expt_cfg['receiver_id']])]
     limit_list += [(100.0,max_len)] * 2
-    limit_list += [(-max_delta_freq,max_delta_freq)] * 2
+    # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
 
-    use_prev_model = True
+    use_prev_model = False
 
     if use_prev_model:
         with open(os.path.join(path,'optimizer/00057_photon_transfer_optimize.pkl'), 'rb') as f:
@@ -530,14 +530,14 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
     else:
         opt = Optimizer(limit_list, "GBRT", acq_optimizer="auto")
 
-        init_send_a = [0.426]#[quantum_device_cfg['communication'][expt_cfg['sender_id']]['pi_amp']]
-        init_rece_a = [0.516]#[quantum_device_cfg['communication'][expt_cfg['receiver_id']]['pi_amp']]
-        init_send_len = [156]
-        init_rece_len = [208]
-        init_delta_freq_send = [0.00025]
-        init_delta_freq_rece = [0]
+        init_send_a = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['pi_amp']]
+        init_rece_a = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['pi_amp']]
+        init_send_len = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['pi_len']]
+        init_rece_len = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['pi_len']]
+        # init_delta_freq_send = [0.00025]
+        # init_delta_freq_rece = [0]
 
-        init_x = [init_send_a + init_rece_a + init_send_len + init_rece_len + init_delta_freq_rece + init_delta_freq_rece] * sequence_num
+        init_x = [init_send_a + init_rece_a + init_send_len + init_rece_len] * sequence_num
 
 
 
@@ -547,8 +547,8 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
         rece_a = x_array[:,1]
         send_len = x_array[:,2]
         rece_len = x_array[:,3]
-        delta_freq_send = x_array[:,4]
-        delta_freq_rece = x_array[:,5]
+        # delta_freq_send = x_array[:,4]
+        # delta_freq_rece = x_array[:,5]
 
         send_A_list = np.outer(send_a, np.ones(10))
         rece_A_list = np.outer(rece_a, np.ones(10))
@@ -556,8 +556,7 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
 
         sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
                                                     send_A_list = send_A_list, rece_A_list = rece_A_list,
-                                                    send_len = send_len, rece_len = rece_len, delta_freq_send= delta_freq_send,
-                                                    delta_freq_rece = delta_freq_rece)
+                                                    send_len = send_len, rece_len = rece_len)
 
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
         data_file = exp.run_experiment(sequences, path, 'photon_transfer_arb', seq_data_file)
@@ -571,7 +570,7 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
 
     for iteration in range(iteration_num):
 
-        next_x_list = opt.ask(sequence_num,strategy='cl_min')
+        next_x_list = opt.ask(sequence_num,strategy='cl_max')
 
         # do the experiment
         x_array = np.array(next_x_list)
@@ -580,8 +579,8 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
         rece_a = x_array[:,1]
         send_len = x_array[:,2]
         rece_len = x_array[:,3]
-        delta_freq_send = x_array[:,4]
-        delta_freq_rece = x_array[:,5]
+        # delta_freq_send = x_array[:,4]
+        # delta_freq_rece = x_array[:,5]
 
         send_A_list = np.outer(send_a, np.ones(10))
         rece_A_list = np.outer(rece_a, np.ones(10))
@@ -589,8 +588,7 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
 
         sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
                                                     send_A_list = send_A_list, rece_A_list = rece_A_list,
-                                                    send_len = send_len, rece_len = rece_len, delta_freq_send= delta_freq_send,
-                                                    delta_freq_rece = delta_freq_rece)
+                                                    send_len = send_len, rece_len = rece_len)
 
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
         data_file = exp.run_experiment(sequences, path, 'photon_transfer_arb', seq_data_file)
