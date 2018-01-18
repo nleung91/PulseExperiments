@@ -57,15 +57,15 @@ def get_singleshot_data_count(expt_data, het_ind ,pi_cal = False):
 
         data_list = np.dot(ge_mean_vec,data_cos_sin_list)/np.dot(ge_mean_vec,ge_mean_vec)
 
-        plt.figure(figsize=(10,7))
+        # plt.figure(figsize=(10,7))
 
         g_cos_ro = data_cos_list[-2]
         g_sin_ro = data_sin_list[-2]
         e_cos_ro = data_cos_list[-1]
         e_sin_ro = data_sin_list[-1]
 
-        plt.scatter(g_cos_ro,g_sin_ro)
-        plt.scatter(e_cos_ro,e_sin_ro)
+        # plt.scatter(g_cos_ro,g_sin_ro)
+        # plt.scatter(e_cos_ro,e_sin_ro)
 
         g_cos_sin_ro = np.array([g_cos_ro,g_sin_ro])
         e_cos_sin_ro = np.array([e_cos_ro,e_sin_ro])
@@ -170,15 +170,15 @@ def get_singleshot_data_two_qubits(single_data_list,pi_cal = False):
 
             data_list_list.append(data_list)
 
-            plt.figure(figsize=(10,7))
+            # plt.figure(figsize=(10,7))
 
             g_cos_ro = data_cos_list[-2]
             g_sin_ro = data_sin_list[-2]
             e_cos_ro = data_cos_list[-1]
             e_sin_ro = data_sin_list[-1]
 
-            plt.scatter(g_cos_ro,g_sin_ro)
-            plt.scatter(e_cos_ro,e_sin_ro)
+            # plt.scatter(g_cos_ro,g_sin_ro)
+            # plt.scatter(e_cos_ro,e_sin_ro)
 
             g_cos_sin_ro = np.array([g_cos_ro,g_sin_ro])
             e_cos_sin_ro = np.array([e_cos_ro,e_sin_ro])
@@ -238,9 +238,9 @@ def get_singleshot_data_two_qubits(single_data_list,pi_cal = False):
 
     #         print(data_count_norm)
 
-            plt.figure(figsize=(7,7))
-            plt.title("qubit %s" %qubit_id)
-            plt.plot(data_count_norm[1])
+            # plt.figure(figsize=(7,7))
+            # plt.title("qubit %s" %qubit_id)
+            # plt.plot(data_count_norm[1])
 
             data_list = data_count_norm[1]
 
