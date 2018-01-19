@@ -812,50 +812,52 @@ class PulseSequences:
 
         measurement_pulse = ['I', 'X', 'Y']
 
-        for qubit_1_measure in measurement_pulse:
-            for qubit_2_measure in measurement_pulse:
-                sequencer.new_sequence(self)
 
-                sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
-                sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
+        for expt_id in range(kwargs.get('sequence_num',1)):
+            for qubit_1_measure in measurement_pulse:
+                for qubit_2_measure in measurement_pulse:
+                    sequencer.new_sequence(self)
 
-                send_flux_pulse = copy.copy(self.communication_flux_half_transfer[sender_id])
-                if 'send_len' in kwargs:
-                    send_flux_pulse.len = kwargs['send_len'][0]
-                if 'send_A_list' in kwargs:
-                    send_flux_pulse.A_list = kwargs['send_A_list'][0]
-                sequencer.append('flux%s'%sender_id,send_flux_pulse)
+                    sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
+                    sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
 
-
-                receiver_flux_pulse = copy.copy(self.communication_flux_half_transfer[receiver_id])
-                if 'rece_len' in kwargs:
-                    receiver_flux_pulse.len = kwargs['rece_len'][0]
-                if 'rece_A_list' in kwargs:
-                    receiver_flux_pulse.A_list = kwargs['rece_A_list'][0]
-                sequencer.append('flux%s'%receiver_id,receiver_flux_pulse)
-
-                sequencer.sync_channels_time(self.channels)
+                    send_flux_pulse = copy.copy(self.communication_flux_half_transfer[sender_id])
+                    if 'send_len' in kwargs:
+                        send_flux_pulse.len = kwargs['send_len'][expt_id]
+                    if 'send_A_list' in kwargs:
+                        send_flux_pulse.A_list = kwargs['send_A_list'][expt_id]
+                    sequencer.append('flux%s'%sender_id,send_flux_pulse)
 
 
-                if qubit_1_measure == 'X':
-                    x_pulse = copy.copy(self.qubit_half_pi['1'])
-                    sequencer.append('charge%s' % '1', x_pulse)
-                elif qubit_1_measure == 'Y':
-                    y_pulse = copy.copy(self.qubit_half_pi['1'])
-                    y_pulse.phase = np.pi/2
-                    sequencer.append('charge%s' % '1', y_pulse)
+                    receiver_flux_pulse = copy.copy(self.communication_flux_half_transfer[receiver_id])
+                    if 'rece_len' in kwargs:
+                        receiver_flux_pulse.len = kwargs['rece_len'][expt_id]
+                    if 'rece_A_list' in kwargs:
+                        receiver_flux_pulse.A_list = kwargs['rece_A_list'][expt_id]
+                    sequencer.append('flux%s'%receiver_id,receiver_flux_pulse)
 
-                if qubit_2_measure == 'X':
-                    x_pulse = copy.copy(self.qubit_half_pi['2'])
-                    sequencer.append('charge%s' % '2', x_pulse)
-                elif qubit_2_measure == 'Y':
-                    y_pulse = copy.copy(self.qubit_half_pi['2'])
-                    y_pulse.phase = np.pi/2
-                    sequencer.append('charge%s' % '2', y_pulse)
+                    sequencer.sync_channels_time(self.channels)
 
-                self.readout(sequencer)
 
-                sequencer.end_sequence()
+                    if qubit_1_measure == 'X':
+                        x_pulse = copy.copy(self.qubit_half_pi['1'])
+                        sequencer.append('charge%s' % '1', x_pulse)
+                    elif qubit_1_measure == 'Y':
+                        y_pulse = copy.copy(self.qubit_half_pi['1'])
+                        y_pulse.phase = np.pi/2
+                        sequencer.append('charge%s' % '1', y_pulse)
+
+                    if qubit_2_measure == 'X':
+                        x_pulse = copy.copy(self.qubit_half_pi['2'])
+                        sequencer.append('charge%s' % '2', x_pulse)
+                    elif qubit_2_measure == 'Y':
+                        y_pulse = copy.copy(self.qubit_half_pi['2'])
+                        y_pulse.phase = np.pi/2
+                        sequencer.append('charge%s' % '2', y_pulse)
+
+                    self.readout(sequencer)
+
+                    sequencer.end_sequence()
 
         return sequencer.complete(self, plot=True)
 
