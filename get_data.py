@@ -450,8 +450,8 @@ def get_singleshot_data_two_qubits(single_data_list,pi_cal = False):
 
             data_list = data_count_norm[1]
 
-    print(decision_boundary_list)
-    print(confusion_matrix_list)
+    # print(decision_boundary_list)
+    # print(confusion_matrix_list)
     gg = np.sum(np.bitwise_and((data_list_list[0] < decision_boundary_list[0]) ,
                                (data_list_list[1] < decision_boundary_list[1])),axis=1)/data_list_list[0].shape[1]
     ge = np.sum(np.bitwise_and((data_list_list[0] < decision_boundary_list[0]) ,

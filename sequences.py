@@ -821,17 +821,17 @@ class PulseSequences:
 
                 send_flux_pulse = copy.copy(self.communication_flux_half_transfer[sender_id])
                 if 'send_len' in kwargs:
-                    send_flux_pulse.len = kwargs['send_len'][expt_id]
+                    send_flux_pulse.len = kwargs['send_len'][0]
                 if 'send_A_list' in kwargs:
-                    send_flux_pulse.A_list = kwargs['send_A_list'][expt_id]
+                    send_flux_pulse.A_list = kwargs['send_A_list'][0]
                 sequencer.append('flux%s'%sender_id,send_flux_pulse)
 
 
                 receiver_flux_pulse = copy.copy(self.communication_flux_half_transfer[receiver_id])
                 if 'rece_len' in kwargs:
-                    receiver_flux_pulse.len = kwargs['rece_len'][expt_id]
+                    receiver_flux_pulse.len = kwargs['rece_len'][0]
                 if 'rece_A_list' in kwargs:
-                    receiver_flux_pulse.A_list = kwargs['rece_A_list'][expt_id]
+                    receiver_flux_pulse.A_list = kwargs['rece_A_list'][0]
                 sequencer.append('flux%s'%receiver_id,receiver_flux_pulse)
 
                 sequencer.sync_channels_time(self.channels)

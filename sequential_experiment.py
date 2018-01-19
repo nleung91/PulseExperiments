@@ -9,6 +9,8 @@ from slab.dsfit import fitdecaysin
 
 from skopt import Optimizer
 
+from slab.experiments.PulseExperiments.get_data import get_singleshot_data_two_qubits, data_to_correlators, two_qubit_quantum_state_tomography
+
 import pickle
 
 def histogram(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
@@ -624,9 +626,12 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
     max_len = 250
     # max_delta_freq = 0.0005
 
+    sender_id = quantum_device_cfg['communication']['sender_id']
+    receiver_id = quantum_device_cfg['communication']['receiver_id']
+
     limit_list = []
-    limit_list += [(0.50, max_a[expt_cfg['sender_id']])]
-    limit_list += [(0.3, max_a[expt_cfg['receiver_id']])]
+    limit_list += [(0.50, max_a[sender_id])]
+    limit_list += [(0.3, max_a[receiver_id])]
     limit_list += [(50.0,max_len)] * 2
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
@@ -640,18 +645,23 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
                 opt = pickle.load(f)
             next_x_list = opt.ask(sequence_num,strategy='cl_max')
         else:
-            opt = Optimizer(limit_list, "GP", acq_optimizer="lbfgs")
 
-            init_send_a = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_amp']]
-            init_rece_a = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_amp']]
-            init_send_len = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_len']]
-            init_rece_len = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_len']]
-            # init_delta_freq_send = [0.00025]
-            # init_delta_freq_rece = [0]
+            if iteration == 0:
+                opt = Optimizer(limit_list, "GP", acq_optimizer="lbfgs")
 
-            next_x_list = [init_send_a + init_rece_a + init_send_len + init_rece_len] * sequence_num
+                init_send_a = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']]
+                init_rece_a = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']]
+                init_send_len = [quantum_device_cfg['communication'][sender_id]['half_transfer_len']]
+                init_rece_len = [quantum_device_cfg['communication'][receiver_id]['half_transfer_len']]
+                # init_delta_freq_send = [0.00025]
+                # init_delta_freq_rece = [0]
+
+                next_x_list = [init_send_a + init_rece_a + init_send_len + init_rece_len] * sequence_num
+            else:
+                next_x_list = opt.ask(sequence_num,strategy='cl_max')
 
         # do the experiment
+        print(next_x_list)
         x_array = np.array(next_x_list)
 
         send_a = x_array[:,0]
@@ -673,8 +683,8 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
         data_file = exp.run_experiment(sequences, path, 'bell_entanglement_by_half_sideband_tomography', seq_data_file)
 
         with SlabFile(data_file) as a:
-            single_data1 = np.array(a['single_data1'])
-            single_data2 = np.array(a['single_data2'])
+            single_data1 = np.array(a['single_data1'])[-1]
+            single_data2 = np.array(a['single_data2'])[-1]
 
             single_data_list = [single_data1, single_data2]
 
