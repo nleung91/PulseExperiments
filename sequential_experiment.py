@@ -634,66 +634,22 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
 
     use_prev_model = False
 
-    if use_prev_model:
-        with open(os.path.join(path,'optimizer/00057_photon_transfer_optimize.pkl'), 'rb') as f:
-            opt = pickle.load(f)
-    else:
-        opt = Optimizer(limit_list, "GP", acq_optimizer="lbfgs")
-
-        init_send_a = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_amp']]
-        init_rece_a = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_amp']]
-        init_send_len = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_len']]
-        init_rece_len = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_len']]
-        # init_delta_freq_send = [0.00025]
-        # init_delta_freq_rece = [0]
-
-        init_x = [init_send_a + init_rece_a + init_send_len + init_rece_len] * sequence_num
-
-
-
-        x_array = np.array(init_x)
-
-        send_a = x_array[:,0]
-        rece_a = x_array[:,1]
-        send_len = x_array[:,2]
-        rece_len = x_array[:,3]
-        # delta_freq_send = x_array[:,4]
-        # delta_freq_rece = x_array[:,5]
-
-        send_A_list = np.outer(send_a, np.ones(10))
-        rece_A_list = np.outer(rece_a, np.ones(10))
-
-
-        sequences = ps.get_experiment_sequences('bell_entanglement_by_half_sideband_tomography', sequence_num = sequence_num,
-                                                    send_A_list = send_A_list, rece_A_list = rece_A_list,
-                                                    send_len = send_len, rece_len = rece_len)
-
-        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
-        data_file = exp.run_experiment(sequences, path, 'bell_entanglement_by_half_sideband_tomography', seq_data_file)
-
-        with SlabFile(data_file) as a:
-            single_data1 = np.array(a['single_data1'])
-            single_data2 = np.array(a['single_data2'])
-
-            single_data_list = [single_data1, single_data2]
-
-            state_norm = get_singleshot_data_two_qubits(single_data_list, expt_cfg['pi_calibration'])
-            state_data = data_to_correlators(state_norm)
-            den_mat = two_qubit_quantum_state_tomography(state_data)
-            perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
-            perfect_bell_den_mat = np.outer(perfect_bell, perfect_bell)
-
-            fidelity = np.trace(np.dot(np.transpose(np.conjugate(perfect_bell_den_mat)),np.abs(den_mat) ))
-
-            f_val_list = [1-fidelity]
-            print(f_val_list)
-
-        opt.tell(init_x, f_val_list)
-
-
     for iteration in range(iteration_num):
+        if use_prev_model:
+            with open(os.path.join(path,'optimizer/00057_photon_transfer_optimize.pkl'), 'rb') as f:
+                opt = pickle.load(f)
+            next_x_list = opt.ask(sequence_num,strategy='cl_max')
+        else:
+            opt = Optimizer(limit_list, "GP", acq_optimizer="lbfgs")
 
-        next_x_list = opt.ask(sequence_num,strategy='cl_max')
+            init_send_a = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_amp']]
+            init_rece_a = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_amp']]
+            init_send_len = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_len']]
+            init_rece_len = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_len']]
+            # init_delta_freq_send = [0.00025]
+            # init_delta_freq_rece = [0]
+
+            next_x_list = [init_send_a + init_rece_a + init_send_len + init_rece_len] * sequence_num
 
         # do the experiment
         x_array = np.array(next_x_list)
