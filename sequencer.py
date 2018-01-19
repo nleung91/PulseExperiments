@@ -78,6 +78,9 @@ class Sequencer:
             if channel_time > max_time:
                 max_time = channel_time
 
+        buffer_time = 5 #add 5ns buffer time everytime sync
+        max_time += buffer_time
+
         for channel in channels:
             self.append_idle_to_time(channel, max_time)
 
