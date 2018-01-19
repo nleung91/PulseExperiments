@@ -766,7 +766,7 @@ class PulseSequences:
                 sequencer.append('flux%s'%sender_id,self.communication_flux_pi[sender_id])
                 sequencer.append('flux%s'%receiver_id,self.communication_flux_pi[receiver_id])
 
-                sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id])
+                sequencer.sync_channels_time(self.channels)
                 # sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
                 sequencer.append('charge%s' % sender_id, self.qubit_ef_pi[sender_id])
 
