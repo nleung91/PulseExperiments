@@ -621,13 +621,13 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
 
 
     max_a = {"1":0.5, "2":0.65}
-    max_len = 300
+    max_len = 250
     # max_delta_freq = 0.0005
 
     limit_list = []
     limit_list += [(0.50, max_a[expt_cfg['sender_id']])]
     limit_list += [(0.3, max_a[expt_cfg['receiver_id']])]
-    limit_list += [(100.0,max_len)] * 2
+    limit_list += [(50.0,max_len)] * 2
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
@@ -672,7 +672,20 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
         data_file = exp.run_experiment(sequences, path, 'bell_entanglement_by_half_sideband_tomography', seq_data_file)
 
         with SlabFile(data_file) as a:
-            f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
+            single_data1 = np.array(a['single_data1'])
+            single_data2 = np.array(a['single_data2'])
+
+            single_data_list = [single_data1, single_data2]
+
+            state_norm = get_singleshot_data_two_qubits(single_data_list, expt_cfg['pi_calibration'])
+            state_data = data_to_correlators(state_norm)
+            den_mat = two_qubit_quantum_state_tomography(state_data)
+            perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
+            perfect_bell_den_mat = np.outer(perfect_bell, perfect_bell)
+
+            fidelity = np.trace(np.dot(np.transpose(np.conjugate(perfect_bell_den_mat)),np.abs(den_mat) ))
+
+            f_val_list = [1-fidelity]
             print(f_val_list)
 
         opt.tell(init_x, f_val_list)
@@ -696,15 +709,28 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
         rece_A_list = np.outer(rece_a, np.ones(10))
 
 
-        sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
+        sequences = ps.get_experiment_sequences('bell_entanglement_by_half_sideband_tomography', sequence_num = sequence_num,
                                                     send_A_list = send_A_list, rece_A_list = rece_A_list,
                                                     send_len = send_len, rece_len = rece_len)
 
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
-        data_file = exp.run_experiment(sequences, path, 'photon_transfer_arb', seq_data_file)
+        data_file = exp.run_experiment(sequences, path, 'bell_entanglement_by_half_sideband_tomography', seq_data_file)
 
         with SlabFile(data_file) as a:
-            f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
+            single_data1 = np.array(a['single_data1'])
+            single_data2 = np.array(a['single_data2'])
+
+            single_data_list = [single_data1, single_data2]
+
+            state_norm = get_singleshot_data_two_qubits(single_data_list, expt_cfg['pi_calibration'])
+            state_data = data_to_correlators(state_norm)
+            den_mat = two_qubit_quantum_state_tomography(state_data)
+            perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
+            perfect_bell_den_mat = np.outer(perfect_bell, perfect_bell)
+
+            fidelity = np.trace(np.dot(np.transpose(np.conjugate(perfect_bell_den_mat)),np.abs(den_mat) ))
+
+            f_val_list = [1-fidelity]
             print(f_val_list)
 
         opt.tell(next_x_list, f_val_list)
