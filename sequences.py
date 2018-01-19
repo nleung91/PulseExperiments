@@ -805,7 +805,7 @@ class PulseSequences:
         return sequencer.complete(self, plot=True)
 
 
-    def bell_entanglement_by_half_sideband_tomography(self, sequencer):
+    def bell_entanglement_by_half_sideband_tomography(self, sequencer, **kwargs):
         # rabi sequences
         sender_id = self.communication['sender_id']
         receiver_id = self.communication['receiver_id']
@@ -818,8 +818,21 @@ class PulseSequences:
 
                 sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
                 sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
-                sequencer.append('flux%s'%sender_id,self.communication_flux_half_transfer[sender_id])
-                sequencer.append('flux%s'%receiver_id,self.communication_flux_half_transfer[receiver_id])
+
+                send_flux_pulse = copy.copy(self.communication_flux_half_transfer[sender_id])
+                if 'send_len' in kwargs:
+                    send_flux_pulse.len = kwargs['send_len'][expt_id]
+                if 'send_A_list' in kwargs:
+                    send_flux_pulse.A_list = kwargs['send_A_list'][expt_id]
+                sequencer.append('flux%s'%sender_id,send_flux_pulse)
+
+
+                receiver_flux_pulse = copy.copy(self.communication_flux_half_transfer[receiver_id])
+                if 'rece_len' in kwargs:
+                    receiver_flux_pulse.len = kwargs['rece_len'][expt_id]
+                if 'rece_A_list' in kwargs:
+                    receiver_flux_pulse.A_list = kwargs['rece_A_list'][expt_id]
+                sequencer.append('flux%s'%receiver_id,receiver_flux_pulse)
 
                 sequencer.sync_channels_time(self.channels)
 

@@ -1,5 +1,211 @@
 import numpy as np
 
+
+def two_qubit_quantum_state_tomography(data):
+
+    ind = 0#(state_index*operations_num*tomography_pulse_num)+(op_index*tomography_pulse_num)
+
+    avgs = []
+
+    avgs.append(1)
+    for i in range(15):
+        avgs.append(data[ind+i])
+
+    #print "avgs2" + str(avgs2)
+
+    #for testing
+    #avgs=data
+    #
+    #print "avgs" + str(avgs)
+    amp = np.sqrt(sum(np.square(avgs)))
+
+    #print amp
+
+
+    def get_P_array():
+        ## Pauli Basis
+        I = np.matrix([[1,0],[0,1]])
+        X = np.matrix([[0,1],[1,0]])
+        Y = np.matrix([[0,-1j],[1j,0]])
+        Z = np.matrix([[1,0],[0,-1]])
+
+        P=[]
+        P.append(I)
+        P.append(X)
+        P.append(Y)
+        P.append(Z)
+
+        return P
+
+    P = get_P_array()
+
+    # tensor products of Pauli matrixes
+    B=[]
+    for i in range(4):
+        for j in range(4):
+            B.append(np.kron(P[i], P[j]))
+
+    den_mat =(0.25*avgs[0]*B[0]).astype(np.complex128)
+    for i in np.arange(1,16):
+        den_mat += 0.25*avgs[i]*B[i]
+
+
+    #
+    # print("Density Matrix:")
+    # print( den_mat)
+    # print ("Trace:")
+    # print (np.real(np.trace(den_mat)))
+    # print ("Density Matrix Squared")
+    # print( np.dot(den_mat,den_mat))
+    # print( "Trace:")
+    # print( np.real(np.trace(np.dot(den_mat,den_mat))))
+    #
+    #
+    #     ### Generate 3D bar chart
+    # ## real
+    # fig = plt.figure(figsize=(20,20))
+    #
+    # ax = fig.add_subplot(111, title='Real', projection='3d')
+    #
+    # coord= [0,1,2,3]
+    #
+    # x_pos=[]
+    # y_pos=[]
+    # for i in range(4):
+    #     for j in range(4):
+    #         x_pos.append(coord[i])
+    #         y_pos.append(coord[j])
+    #
+    # xpos=np.array(x_pos)
+    # ypos=np.array(y_pos)
+    # zpos=np.array([0]*16)
+    # dx = [0.6]*16
+    # dy = dx
+    # dz=np.squeeze(np.asarray(np.array(np.real(den_mat).flatten())))
+    #
+    # nrm=mpl.colors.Normalize(-1,1)
+    # colors=mpl.cm.Reds(nrm(dz))
+    # alphas = np.linspace(0.8, 0.8, len(xpos), endpoint=True)
+    #
+    # for i in range(len(dx)):
+    #     ax.bar3d(xpos[i],ypos[i],zpos[i],dx[i],dy[i],dz[i], alpha=alphas[i],color=colors[i])
+    # xticks=['ee','eg','ge','gg']
+    # yticks=xticks
+    # ax.set_xticks([0,1,2,3])
+    # ax.set_xticklabels(xticks)
+    # ax.set_yticks([0,1,2,3])
+    # ax.set_yticklabels(yticks)
+    # ax.set_zlim(-1,1)
+    # plt.show()
+    #
+    # # imaginary
+    #
+    # fig = plt.figure(figsize=(20,20))
+    #
+    # ax = fig.add_subplot(111, title='Imaginary', projection='3d')
+    #
+    # coord= [0,1,2,3]
+    #
+    # x_pos=[]
+    # y_pos=[]
+    # for i in range(4):
+    #     for j in range(4):
+    #         x_pos.append(coord[i])
+    #         y_pos.append(coord[j])
+    #
+    # xpos=np.array(x_pos)
+    # ypos=np.array(y_pos)
+    # zpos=np.array([0]*16)
+    # dx = [0.6]*16
+    # dy = dx
+    # dz=np.squeeze(np.asarray(np.array(np.imag(den_mat).flatten())))
+    #
+    #
+    # nrm=mpl.colors.Normalize(-1,1)
+    # colors=mpl.cm.Reds(nrm(dz))
+    # alphas = np.linspace(0.8, 0.8, len(xpos), endpoint=True)
+    #
+    # for i in range(len(dx)):
+    #     ax.bar3d(xpos[i],ypos[i],zpos[i],dx[i],dy[i],dz[i], alpha=alphas[i],color=colors[i])
+    # xticks=['ee','eg','ge','gg']
+    # yticks=xticks
+    # ax.set_xticks([0.3,1.3,2.3,3.3])
+    # ax.set_xticklabels(xticks)
+    # ax.set_yticks([0.3,1.3,2.3,3.3])
+    # ax.set_yticklabels(yticks)
+    # ax.set_zlim(-1,1)
+    # plt.show()
+    #
+    # ## absolute value
+    #
+    # fig = plt.figure(figsize=(20,20))
+    #
+    # ax = fig.add_subplot(111, title='Abs', projection='3d')
+    #
+    # coord= [0,1,2,3]
+    #
+    # x_pos=[]
+    # y_pos=[]
+    # for i in range(4):
+    #     for j in range(4):
+    #         x_pos.append(coord[i])
+    #         y_pos.append(coord[j])
+    #
+    # xpos=np.array(x_pos)
+    # ypos=np.array(y_pos)
+    # zpos=np.array([0]*16)
+    # dx = [0.6]*16
+    # dy = dx
+    # dz=np.squeeze(np.asarray(np.array(np.abs(den_mat).flatten())))
+    #
+    #
+    # nrm=mpl.colors.Normalize(-1,1)
+    # colors=mpl.cm.Reds(nrm(dz))
+    # alphas = np.linspace(0.8, 0.8, len(xpos), endpoint=True)
+    #
+    # for i in range(len(dx)):
+    #     ax.bar3d(xpos[i],ypos[i],zpos[i],dx[i],dy[i],dz[i], alpha=alphas[i],color=colors[i])
+    # xticks=['ee','eg','ge','gg']
+    # yticks=xticks
+    # ax.set_xticks([0.3,1.3,2.3,3.3])
+    # ax.set_xticklabels(xticks)
+    # ax.set_yticks([0.3,1.3,2.3,3.3])
+    # ax.set_yticklabels(yticks)
+    # ax.set_zlim(-1,1)
+    # plt.show()
+
+    return den_mat
+
+def data_to_correlators(state_norm):
+    IZ = (state_norm[1][0] + state_norm[3][0]) - (state_norm[0][0] + state_norm[2][0])
+    ZI = (state_norm[2][0] + state_norm[3][0]) - (state_norm[0][0] + state_norm[1][0])
+
+    IX = (state_norm[1][1] + state_norm[3][1]) - (state_norm[0][1] + state_norm[2][1])
+    IY = (state_norm[1][2] + state_norm[3][2]) - (state_norm[0][2] + state_norm[2][2])
+
+    XI = (state_norm[2][3] + state_norm[3][3]) - (state_norm[0][3] + state_norm[1][3])
+    YI = (state_norm[2][6] + state_norm[3][6]) - (state_norm[0][6] + state_norm[1][6])
+
+    XX = (state_norm[0][4] + state_norm[3][4]) - (state_norm[1][4] + state_norm[2][4])
+    XY = (state_norm[0][5] + state_norm[3][5]) - (state_norm[1][5] + state_norm[2][5])
+    YX = (state_norm[0][7] + state_norm[3][7]) - (state_norm[1][7] + state_norm[2][7])
+    YY = (state_norm[0][8] + state_norm[3][8]) - (state_norm[1][8] + state_norm[2][8])
+
+    ZZ = (state_norm[0][0] + state_norm[3][0]) - (state_norm[1][0] + state_norm[2][0])
+
+
+    ZX = (state_norm[0][1] + state_norm[3][1]) - (state_norm[1][1] + state_norm[2][1])
+    ZY = (state_norm[0][2] + state_norm[3][2]) - (state_norm[1][2] + state_norm[2][2])
+
+    XZ = (state_norm[0][3] + state_norm[3][3]) - (state_norm[1][3] + state_norm[2][3])
+    YZ = (state_norm[0][6] + state_norm[3][6]) - (state_norm[1][6] + state_norm[2][6])
+
+
+    state_data = [IX,IY,IZ,XI, XX, XY, XZ, YI, YX, YY, YZ, ZI, ZX, ZY, ZZ]
+
+    return state_data
+
+
 def get_singleshot_data(expt_data, het_ind ,pi_cal = False):
 
 

@@ -608,6 +608,116 @@ def photon_transfer_optimize_v3(quantum_device_cfg, experiment_cfg, hardware_cfg
             qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardware_cfg, path)
 
 
+def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['bell_entanglement_by_half_sideband_tomography']
+    data_path = os.path.join(path, 'data/')
+    filename = get_next_filename(data_path, 'bell_entanglement_by_half_sideband_optimize', suffix='.h5')
+    seq_data_file = os.path.join(data_path, filename)
+
+    iteration_num = 20000
+
+    sequence_num = 1
+    expt_num = sequence_num
+
+
+    max_a = {"1":0.5, "2":0.65}
+    max_len = 300
+    # max_delta_freq = 0.0005
+
+    limit_list = []
+    limit_list += [(0.50, max_a[expt_cfg['sender_id']])]
+    limit_list += [(0.3, max_a[expt_cfg['receiver_id']])]
+    limit_list += [(100.0,max_len)] * 2
+    # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
+
+    ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+
+    use_prev_model = False
+
+    if use_prev_model:
+        with open(os.path.join(path,'optimizer/00057_photon_transfer_optimize.pkl'), 'rb') as f:
+            opt = pickle.load(f)
+    else:
+        opt = Optimizer(limit_list, "GP", acq_optimizer="lbfgs")
+
+        init_send_a = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_amp']]
+        init_rece_a = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_amp']]
+        init_send_len = [quantum_device_cfg['communication'][expt_cfg['sender_id']]['half_transfer_len']]
+        init_rece_len = [quantum_device_cfg['communication'][expt_cfg['receiver_id']]['half_transfer_len']]
+        # init_delta_freq_send = [0.00025]
+        # init_delta_freq_rece = [0]
+
+        init_x = [init_send_a + init_rece_a + init_send_len + init_rece_len] * sequence_num
+
+
+
+        x_array = np.array(init_x)
+
+        send_a = x_array[:,0]
+        rece_a = x_array[:,1]
+        send_len = x_array[:,2]
+        rece_len = x_array[:,3]
+        # delta_freq_send = x_array[:,4]
+        # delta_freq_rece = x_array[:,5]
+
+        send_A_list = np.outer(send_a, np.ones(10))
+        rece_A_list = np.outer(rece_a, np.ones(10))
+
+
+        sequences = ps.get_experiment_sequences('bell_entanglement_by_half_sideband_tomography', sequence_num = sequence_num,
+                                                    send_A_list = send_A_list, rece_A_list = rece_A_list,
+                                                    send_len = send_len, rece_len = rece_len)
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        data_file = exp.run_experiment(sequences, path, 'bell_entanglement_by_half_sideband_tomography', seq_data_file)
+
+        with SlabFile(data_file) as a:
+            f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
+            print(f_val_list)
+
+        opt.tell(init_x, f_val_list)
+
+
+    for iteration in range(iteration_num):
+
+        next_x_list = opt.ask(sequence_num,strategy='cl_max')
+
+        # do the experiment
+        x_array = np.array(next_x_list)
+
+        send_a = x_array[:,0]
+        rece_a = x_array[:,1]
+        send_len = x_array[:,2]
+        rece_len = x_array[:,3]
+        # delta_freq_send = x_array[:,4]
+        # delta_freq_rece = x_array[:,5]
+
+        send_A_list = np.outer(send_a, np.ones(10))
+        rece_A_list = np.outer(rece_a, np.ones(10))
+
+
+        sequences = ps.get_experiment_sequences('photon_transfer_arb', sequence_num = sequence_num,
+                                                    send_A_list = send_A_list, rece_A_list = rece_A_list,
+                                                    send_len = send_len, rece_len = rece_len)
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        data_file = exp.run_experiment(sequences, path, 'photon_transfer_arb', seq_data_file)
+
+        with SlabFile(data_file) as a:
+            f_val_list = list(1-np.array(a['expt_avg_data_ch%s'%expt_cfg['receiver_id']])[-1])
+            print(f_val_list)
+
+        opt.tell(next_x_list, f_val_list)
+
+        with open(os.path.join(path,'optimizer/%s.pkl' %filename.split('.')[0]), 'wb') as f:
+            pickle.dump(opt, f)
+
+
+        frequency_recalibrate_cycle = 20
+        if iteration % frequency_recalibrate_cycle == frequency_recalibrate_cycle-1:
+            qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardware_cfg, path)
+
+
 
 def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['photon_transfer']
