@@ -167,6 +167,7 @@ class Experiment:
                 f.append_line('expt_avg_data_ch2', data_2_avg_list)
                 f.close()
         self.adc.close()
+        self.awg_prep()
 
     def get_avg_data(self, acquisition_num, data_file, seq_data_file):
         expt_data_ch1 = None
@@ -209,6 +210,7 @@ class Experiment:
                     f.add('expt_avg_data_ch2', data_2_list)
                     f.close()
         self.adc.close()
+        self.awg_prep()
         if not seq_data_file == None:
             self.slab_file = SlabFile(data_file)
             with self.slab_file as f:
