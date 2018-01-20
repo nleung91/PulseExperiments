@@ -622,16 +622,16 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
     expt_num = sequence_num
 
 
-    max_a = {"1":0.5, "2":0.65}
-    max_len = 250
+    max_a = {"1":0.6, "2":0.7}
+    max_len = 200
     # max_delta_freq = 0.0005
 
     sender_id = quantum_device_cfg['communication']['sender_id']
     receiver_id = quantum_device_cfg['communication']['receiver_id']
 
     limit_list = []
-    limit_list += [(0.50, max_a[sender_id])]
-    limit_list += [(0.3, max_a[receiver_id])]
+    limit_list += [(0.60, max_a[sender_id])]
+    limit_list += [(0.4, max_a[receiver_id])]
     limit_list += [(50.0,max_len)] * 2
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
@@ -647,7 +647,7 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
         else:
 
             if iteration == 0:
-                opt = Optimizer(limit_list, "GP", acq_optimizer="lbfgs")
+                opt = Optimizer(limit_list, "GBRT", acq_optimizer="auto")
 
                 init_send_a = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']]
                 init_rece_a = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']]
@@ -656,7 +656,17 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
                 # init_delta_freq_send = [0.00025]
                 # init_delta_freq_rece = [0]
 
-                next_x_list = [init_send_a + init_rece_a + init_send_len + init_rece_len] * sequence_num
+                next_x_list = [init_send_a + init_rece_a + init_send_len + init_rece_len]
+
+                for ii in range(sequence_num-1):
+                    x_list = []
+                    for limit in limit_list:
+                        sample = np.random.uniform(low=limit[0],high=limit[1])
+                        x_list.append(sample)
+                    next_x_list.append(x_list)
+
+
+
             else:
                 next_x_list = opt.ask(sequence_num,strategy='cl_max')
 
