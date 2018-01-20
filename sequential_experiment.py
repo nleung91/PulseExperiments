@@ -618,9 +618,10 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
 
     iteration_num = 20000
 
-    sequence_num = 10
+    sequence_num = 20
     expt_num = sequence_num
 
+    A_list_len = 5
 
     max_a = {"1":0.6, "2":0.7}
     max_len = 200
@@ -630,8 +631,8 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
     receiver_id = quantum_device_cfg['communication']['receiver_id']
 
     limit_list = []
-    limit_list += [(0.60, max_a[sender_id])]
-    limit_list += [(0.4, max_a[receiver_id])]
+    limit_list += [(0.30, max_a[sender_id])]*A_list_len
+    limit_list += [(0.2, max_a[receiver_id])]*A_list_len
     limit_list += [(50.0,max_len)] * 2
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
@@ -649,8 +650,8 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
             if iteration == 0:
                 opt = Optimizer(limit_list, "GBRT", acq_optimizer="auto")
 
-                init_send_a = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']]
-                init_rece_a = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']]
+                init_send_a = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']]*A_list_len
+                init_rece_a = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']]*A_list_len
                 init_send_len = [quantum_device_cfg['communication'][sender_id]['half_transfer_len']]
                 init_rece_len = [quantum_device_cfg['communication'][receiver_id]['half_transfer_len']]
                 # init_delta_freq_send = [0.00025]
@@ -674,15 +675,21 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
         print(next_x_list)
         x_array = np.array(next_x_list)
 
-        send_a = x_array[:,0]
-        rece_a = x_array[:,1]
-        send_len = x_array[:,2]
-        rece_len = x_array[:,3]
-        # delta_freq_send = x_array[:,4]
-        # delta_freq_rece = x_array[:,5]
+        # send_a = x_array[:,0]
+        # rece_a = x_array[:,1]
+        # send_len = x_array[:,2]
+        # rece_len = x_array[:,3]
+        # # delta_freq_send = x_array[:,4]
+        # # delta_freq_rece = x_array[:,5]
+        #
+        # send_A_list = np.outer(send_a, np.ones(10))
+        # rece_A_list = np.outer(rece_a, np.ones(10))
 
-        send_A_list = np.outer(send_a, np.ones(10))
-        rece_A_list = np.outer(rece_a, np.ones(10))
+
+        send_A_list = x_array[:,:A_list_len]
+        rece_A_list = x_array[:,A_list_len:2*A_list_len]
+        send_len = x_array[:,-2]
+        rece_len = x_array[:,-1]
 
 
         sequences = ps.get_experiment_sequences('bell_entanglement_by_half_sideband_tomography', sequence_num = sequence_num,
@@ -720,7 +727,7 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
             pickle.dump(opt, f)
 
 
-        frequency_recalibrate_cycle = 20
+        frequency_recalibrate_cycle = 10
         if iteration % frequency_recalibrate_cycle == frequency_recalibrate_cycle-1:
             qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardware_cfg, path)
 
