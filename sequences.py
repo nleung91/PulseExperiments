@@ -503,7 +503,7 @@ class PulseSequences:
             sequencer.new_sequence(self)
 
             sender_id = self.communication['sender_id']
-            receiver_id = self.expt_cfg['receiver_id']
+            receiver_id = self.communication['receiver_id']
 
             sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
             sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])

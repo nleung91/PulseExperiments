@@ -618,7 +618,7 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
 
     iteration_num = 20000
 
-    sequence_num = 5
+    sequence_num = 10
     expt_num = sequence_num
 
 
@@ -693,7 +693,7 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
                 elem_list = list(range(expt_id*9,(expt_id+1)*9)) + [-2,-1]
                 single_data_list = [single_data1[:,:,elem_list,:], single_data2[:,:,elem_list,:]]
                 state_norm = get_singleshot_data_two_qubits(single_data_list, expt_cfg['pi_calibration'])
-                print(state_norm.shape)
+                # print(state_norm.shape)
                 state_data = data_to_correlators(state_norm)
                 den_mat = two_qubit_quantum_state_tomography(state_data)
                 perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
@@ -775,13 +775,13 @@ def sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cf
     data_path = os.path.join(path, 'data/')
     seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'sideband_rabi_freq_amp_sweep', suffix='.h5'))
 
-    amp_start = 0.75
+    amp_start = 0.70
     amp_stop = 0.0
     amp_step = -0.01
 
     for amp in np.arange(amp_start, amp_stop,amp_step):
         experiment_cfg['sideband_rabi_freq']['amp'] = amp
-        experiment_cfg['sideband_rabi_freq']['pulse_len'] = 100*amp_start/amp
+        experiment_cfg['sideband_rabi_freq']['pulse_len'] = 70*amp_start/amp
         ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
         sequences = ps.get_experiment_sequences('sideband_rabi_freq')
 
