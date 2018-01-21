@@ -630,7 +630,7 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
     receiver_id = quantum_device_cfg['communication']['receiver_id']
 
     limit_list = []
-    limit_list += [(0.50, max_a[sender_id])]
+    limit_list += [(0.30, max_a[sender_id])]
     limit_list += [(0.3, max_a[receiver_id])]
     limit_list += [(50.0,max_len)] * 2
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
@@ -643,7 +643,7 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
         if use_prev_model:
             with open(os.path.join(path,'optimizer/00057_photon_transfer_optimize.pkl'), 'rb') as f:
                 opt = pickle.load(f)
-            next_x_list = opt.ask(sequence_num,strategy='cl_max')
+            next_x_list = opt.ask(sequence_num,strategy='cl_min')
         else:
 
             if iteration == 0:
