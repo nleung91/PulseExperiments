@@ -726,7 +726,7 @@ def bell_entanglement_by_half_sideband_optimize(quantum_device_cfg, experiment_c
 
 
 def bell_entanglement_by_half_sideband_optimize_v4(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
-    # use a * len as a variable
+    # use a * len as a variable, and not use opt.ask
     expt_cfg = experiment_cfg['bell_entanglement_by_half_sideband_tomography']
     data_path = os.path.join(path, 'data/')
     filename = get_next_filename(data_path, 'bell_entanglement_by_half_sideband_optimize', suffix='.h5')
@@ -748,53 +748,60 @@ def bell_entanglement_by_half_sideband_optimize_v4(quantum_device_cfg, experimen
     limit_list = []
     limit_list += [(0.30, max_a[sender_id])]
     limit_list += [(0.3, max_a[receiver_id])]
-    limit_list += [(20.0,max_len*max_a[sender_id])]
-    limit_list += [(20.0,max_len*max_a[receiver_id])]
+    limit_list += [(10.0,max_len*max_a[sender_id])]
+    limit_list += [(10.0,max_len*max_a[receiver_id])]
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
 
-    use_prev_model = False
+    use_prev_model = True
 
     for iteration in range(iteration_num):
-        if use_prev_model:
-            with open(os.path.join(path,'optimizer/00057_photon_transfer_optimize.pkl'), 'rb') as f:
+        if iteration == 0 and use_prev_model:
+            with open(os.path.join(path,'optimizer/00031_bell_entanglement_by_half_sideband_optimize.pkl'), 'rb') as f:
                 opt = pickle.load(f)
-            next_x_list = opt.ask(sequence_num,strategy='cl_min')
+
+        if iteration == 0 and not use_prev_model:
+            opt = Optimizer(limit_list, "GBRT", acq_optimizer="auto")
+
+            init_send_a = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']]
+            init_rece_a = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']]
+            init_send_len = [quantum_device_cfg['communication'][sender_id]['half_transfer_len']]
+            init_rece_len = [quantum_device_cfg['communication'][receiver_id]['half_transfer_len']]
+
+            init_send_area = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']*quantum_device_cfg['communication'][sender_id]['half_transfer_len']]
+            init_rece_area = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']*quantum_device_cfg['communication'][receiver_id]['half_transfer_len']]
+            # init_delta_freq_send = [0.00025]
+            # init_delta_freq_rece = [0]
+
+            next_x_list = [init_send_a + init_rece_a + init_send_area + init_rece_area]
+
+            for ii in range(sequence_num-1):
+                x_list = []
+                for limit in limit_list:
+                    sample = np.random.uniform(low=limit[0],high=limit[1])
+                    x_list.append(sample)
+                next_x_list.append(x_list)
+
+
+
         else:
+            x_from_model_num = int(sequence_num/2)
 
-            if iteration == 0:
-                opt = Optimizer(limit_list, "GBRT", acq_optimizer="auto")
+            X_cand = opt.space.transform(opt.space.rvs(n_samples=100000))
+            X_cand_predict = opt.models[-1].predict(X_cand)
+            X_cand_argsort = np.argsort(X_cand_predict)
+            X_cand_sort = np.array([X_cand[ii] for ii in X_cand_argsort])
+            X_cand_top = X_cand_sort[:x_from_model_num]
 
-                init_send_a = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']]
-                init_rece_a = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']]
-                init_send_len = [quantum_device_cfg['communication'][sender_id]['half_transfer_len']]
-                init_rece_len = [quantum_device_cfg['communication'][receiver_id]['half_transfer_len']]
+            next_x_list = opt.space.inverse_transform(X_cand_top)
 
-                init_send_area = [quantum_device_cfg['communication'][sender_id]['half_transfer_amp']*quantum_device_cfg['communication'][sender_id]['half_transfer_len']]
-                init_rece_area = [quantum_device_cfg['communication'][receiver_id]['half_transfer_amp']*quantum_device_cfg['communication'][receiver_id]['half_transfer_len']]
-                # init_delta_freq_send = [0.00025]
-                # init_delta_freq_rece = [0]
-
-                next_x_list = [init_send_a + init_rece_a + init_send_area + init_rece_area]
-
-                for ii in range(sequence_num-1):
-                    x_list = []
-                    for limit in limit_list:
-                        sample = np.random.uniform(low=limit[0],high=limit[1])
-                        x_list.append(sample)
-                    next_x_list.append(x_list)
-
-
-
-            else:
-                X_cand = opt.space.transform(opt.space.rvs(n_samples=1000000))
-                X_cand_predict = opt.models[-1].predict(X_cand)
-                X_cand_argsort = np.argsort(X_cand_predict)
-                X_cand_sort = np.array([X_cand[ii] for ii in X_cand_argsort])
-                X_cand_top = X_cand_sort[:expt_num]
-
-                next_x_list = opt.space.inverse_transform(X_cand_top)
+            for ii in range(sequence_num-x_from_model_num):
+                x_list = []
+                for limit in limit_list:
+                    sample = np.random.uniform(low=limit[0],high=limit[1])
+                    x_list.append(sample)
+                next_x_list.append(x_list)
 
         # do the experiment
         print(next_x_list)
@@ -845,6 +852,9 @@ def bell_entanglement_by_half_sideband_optimize_v4(quantum_device_cfg, experimen
             print(f_val_list)
 
         opt.tell(next_x_list, f_val_list)
+
+        # only save the latest model
+        opt.models = [opt.models[-1]]
 
         with open(os.path.join(path,'optimizer/%s.pkl' %filename.split('.')[0]), 'wb') as f:
             pickle.dump(opt, f)
@@ -1163,14 +1173,32 @@ def sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cf
 
     amp_start = 0.70
     amp_stop = 0.0
-    amp_step = -0.01
+    amp_step = -0.005
 
     for amp in np.arange(amp_start, amp_stop,amp_step):
         experiment_cfg['sideband_rabi_freq']['amp'] = amp
-        experiment_cfg['sideband_rabi_freq']['pulse_len'] = 70*amp_start/amp
+        experiment_cfg['sideband_rabi_freq']['pulse_len'] = 90*amp_start/amp
         ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
         sequences = ps.get_experiment_sequences('sideband_rabi_freq')
 
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
         exp.run_experiment(sequences, path, 'sideband_rabi_freq', seq_data_file)
 
+
+def rabi_repeat(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['rabi']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'rabi_repeat', suffix='.h5'))
+
+    repeat = 100
+
+    update_awg = True
+
+    for ii in range(repeat):
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('rabi')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        exp.run_experiment(sequences, path, 'rabi', seq_data_file, update_awg = update_awg)
+
+        update_awg = False
