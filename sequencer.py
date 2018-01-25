@@ -145,8 +145,29 @@ class Sequencer:
         self.multiple_sequences.append(sequence)
 
     def complete(self, sequences, plot=True):
+        if sequences.expt_cfg.get('4_calibration', False):
+            self.new_sequence(sequences)
+            sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
+            self.end_sequence()
 
-        if sequences.expt_cfg.get('pi_calibration', False):
+            self.new_sequence(sequences)
+            qubit_id = "2"
+            self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])
+            sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
+            self.end_sequence()
+
+            self.new_sequence(sequences)
+            qubit_id = "1"
+            self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])
+            sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
+            self.end_sequence()
+
+            self.new_sequence(sequences)
+            for qubit_id in sequences.expt_cfg.get('on_qubits',["1","2"]):
+                self.append('charge%s' %qubit_id, sequences.qubit_pi[qubit_id])
+            sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
+            self.end_sequence()
+        elif sequences.expt_cfg.get('pi_calibration', False):
 
             self.new_sequence(sequences)
             sequences.readout(self, sequences.expt_cfg.get('on_qubits',["1", "2"]))
