@@ -69,10 +69,10 @@ class PulseSequences:
         self.sideband_cooling = self.quantum_device_cfg['sideband_cooling']
 
 
-        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/1.pkl'), 'rb') as f:
+        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/1_100kHz.pkl'), 'rb') as f:
             freq_a_p_1 = pickle.load(f)
 
-        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/2.pkl'), 'rb') as f:
+        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/2_100kHz.pkl'), 'rb') as f:
             freq_a_p_2 = pickle.load(f)
 
         gauss_z = np.linspace(-2,2,20)
@@ -482,7 +482,7 @@ class PulseSequences:
 
                 if "freq_a" in self.expt_cfg["use_fit"]:
 
-                    with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s.pkl'%qubit_id), 'rb') as f:
+                    with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_100kHz.pkl'%qubit_id), 'rb') as f:
                         freq_a_p = pickle.load(f)
 
                     # freq_a_p = np.poly1d(np.load(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s.npy'%qubit_id)))
@@ -522,12 +522,12 @@ class PulseSequences:
 
             if "freq_a" in self.expt_cfg["use_fit"]:
 
-                with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s.pkl'%sender_id), 'rb') as f:
+                with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_100kHz.pkl'%sender_id), 'rb') as f:
                     freq_a_p_send = pickle.load(f)
 
                 freq_send = freq_a_p_send(self.communication[sender_id]['pi_amp'])
 
-                with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s.pkl'%receiver_id), 'rb') as f:
+                with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_100kHz.pkl'%receiver_id), 'rb') as f:
                     freq_a_p_rece = pickle.load(f)
 
                 freq_rece = freq_a_p_rece(self.communication[receiver_id]['pi_amp'])
