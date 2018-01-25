@@ -158,7 +158,19 @@ class PulseSequences:
         # sideband rabi freq sweep
         rabi_len = self.expt_cfg['pulse_len']
 
-        if self.expt_cfg["around_mm"]:
+        if self.expt_cfg["around"] == "comm":
+            amp = self.expt_cfg['amp']
+
+            qubit_id = self.expt_cfg['on_qubits'][0]
+
+            with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_500kHz.pkl' %qubit_id), 'rb') as f:
+                freq_a_p = pickle.load(f)
+
+            center_freq = freq_a_p(amp)
+            print("center freq: %s" %center_freq)
+            freq_array = np.arange(center_freq-self.expt_cfg['freq_range'],center_freq+self.expt_cfg['freq_range'],self.expt_cfg['step'])
+
+        elif self.expt_cfg["around"] == "mm":
 
             qubit_id = self.expt_cfg['on_qubits'][0]
             mm_freq_list = self.quantum_device_cfg['multimodes'][qubit_id]['freq']
