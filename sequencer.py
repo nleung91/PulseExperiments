@@ -195,7 +195,7 @@ class Sequencer:
 
         sequence_id = 0
 
-        for sequence in self.multiple_sequences[::20]:
+        for sequence in self.multiple_sequences[::]:
 
             sequence_id += 1
 

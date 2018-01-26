@@ -347,6 +347,182 @@ def get_singleshot_data_count(expt_data, het_ind ,pi_cal = False):
 
     return data_cos_list, data_sin_list, data_list
 
+
+def get_singleshot_data_two_qubits_4_calibration(single_data_list):
+
+    decision_boundary_list = []
+    confusion_matrix_list = []
+    data_list_list = []
+
+    for ii, expt_data in enumerate(single_data_list):
+
+        data_cos_list= expt_data[ii][0]
+        data_sin_list= expt_data[ii][1]
+
+
+        if ii == 0:
+
+            ge_cos = np.mean(data_cos_list[-2]) - np.mean(data_cos_list[-4])
+            ge_sin = np.mean(data_sin_list[-2]) - np.mean(data_sin_list[-4])
+        elif ii == 1:
+            ge_cos = np.mean(data_cos_list[-3]) - np.mean(data_cos_list[-4])
+            ge_sin = np.mean(data_sin_list[-3]) - np.mean(data_sin_list[-4])
+
+        ge_mean_vec = np.array([ge_cos,ge_sin])
+
+        data_cos_sin_list = np.array([data_cos_list[:],
+                                      data_sin_list[:]])
+
+        data_cos_sin_list = np.transpose(data_cos_sin_list, (1,0,2))
+
+
+        data_list = np.dot(ge_mean_vec,data_cos_sin_list)/np.dot(ge_mean_vec,ge_mean_vec)
+
+        data_list_list.append(data_list)
+
+        # plt.figure(figsize=(7,7))
+        if ii == 0:
+            g_cos_ro = data_cos_list[-4]
+            g_sin_ro = data_sin_list[-4]
+            e_cos_ro = data_cos_list[-2]
+            e_sin_ro = data_sin_list[-2]
+        elif ii == 1:
+            g_cos_ro = data_cos_list[-4]
+            g_sin_ro = data_sin_list[-4]
+            e_cos_ro = data_cos_list[-3]
+            e_sin_ro = data_sin_list[-3]
+
+
+        # plt.scatter(g_cos_ro,g_sin_ro)
+        # plt.scatter(e_cos_ro,e_sin_ro)
+
+        g_cos_sin_ro = np.array([g_cos_ro,g_sin_ro])
+        e_cos_sin_ro = np.array([e_cos_ro,e_sin_ro])
+
+        g_proj = np.dot(ge_mean_vec,g_cos_sin_ro)/np.dot(ge_mean_vec,ge_mean_vec)
+        e_proj = np.dot(ge_mean_vec,e_cos_sin_ro)/np.dot(ge_mean_vec,ge_mean_vec)
+
+#         print(np.mean(data_list[0]))
+#         print(np.mean(g_proj))
+
+        all_proj = np.array([g_proj,e_proj])
+        histo_range = (all_proj.min() / 1.05, all_proj.max() * 1.05)
+
+        g_hist, g_bins = np.histogram(g_proj,bins=1000,range=histo_range)
+        e_hist, e_bins = np.histogram(e_proj,bins=1000,range=histo_range)
+
+        g_hist_cumsum = np.cumsum(g_hist)
+        e_hist_cumsum = np.cumsum(e_hist)
+
+#         plt.figure(figsize=(7,7))
+# #             plt.title("qubit %s" %qubit_id)
+#         plt.plot(g_bins[:-1],g_hist, 'b')
+#         plt.plot(e_bins[:-1],e_hist, 'r')
+
+        max_contrast = abs(((e_hist_cumsum - g_hist_cumsum) / g_hist_cumsum[-1])).max()
+
+
+
+        decision_boundary = g_bins[np.argmax(abs(((e_hist_cumsum - g_hist_cumsum) / g_hist_cumsum[-1])))]
+
+        decision_boundary_list.append(decision_boundary)
+
+        # print(max_contrast)
+#         print("decision boundary: %s" %decision_boundary)
+#         plt.figure(figsize=(7,7))
+#         plt.plot(np.sum(data_list>decision_boundary,axis=1)/data_list.shape[1])
+#         plt.figure(figsize=(7,7))
+#         plt.title("qubit %s" %qubit_id)
+#         plt.plot(np.sum(data_list>decision_boundary,axis=1)/data_list.shape[1])
+#         print(data_list.shape)
+
+        confusion_matrix = np.array([[np.sum(g_proj<decision_boundary), np.sum(e_proj<decision_boundary)],
+                                     [np.sum(g_proj>decision_boundary),np.sum(e_proj>decision_boundary)]])/data_list.shape[1]
+
+        confusion_matrix_list.append(confusion_matrix)
+#         print(confusion_matrix)
+
+        confusion_matrix_inv = np.linalg.inv(confusion_matrix)
+
+#         print(confusion_matrix_inv)
+
+        data_count = np.array([np.sum(data_list<decision_boundary,axis=1),
+                               np.sum(data_list>decision_boundary,axis=1)])/data_list.shape[1]
+#         print(data_count)
+
+        data_count_norm = np.dot(confusion_matrix_inv,data_count)
+
+#         print(data_count_norm)
+#
+#         plt.figure(figsize=(7,7))
+# #             plt.title("population by counting: qubit %s" %qubit_id)
+#         plt.plot(data_count_norm[1])
+
+        data_list = data_count_norm[1]
+
+    # print(decision_boundary_list)
+    # print(confusion_matrix_list)
+    gg = np.sum(np.bitwise_and((data_list_list[0] < decision_boundary_list[0]) ,
+                               (data_list_list[1] < decision_boundary_list[1])),axis=1)/data_list_list[0].shape[1]
+    ge = np.sum(np.bitwise_and((data_list_list[0] < decision_boundary_list[0]) ,
+                               (data_list_list[1] > decision_boundary_list[1])),axis=1)/data_list_list[0].shape[1]
+    eg = np.sum(np.bitwise_and((data_list_list[0] > decision_boundary_list[0]) ,
+                               (data_list_list[1] < decision_boundary_list[1])),axis=1)/data_list_list[0].shape[1]
+    ee = np.sum(np.bitwise_and((data_list_list[0] > decision_boundary_list[0]) ,
+                               (data_list_list[1] > decision_boundary_list[1])),axis=1)/data_list_list[0].shape[1]
+
+    total_confusion_matrix = np.kron(confusion_matrix_list[0],confusion_matrix_list[1])
+
+    ## 4- confusion
+    # print("4confusion")
+    # print(len(data_list_list[0]))
+    gg_confusion = [np.sum(np.bitwise_and((data_list_list[0][kk] < decision_boundary_list[0]) ,
+                    (data_list_list[1][kk] < decision_boundary_list[1])))/data_list_list[0].shape[1] for kk in range(-4,0)]
+    ge_confusion = [np.sum(np.bitwise_and((data_list_list[0][kk] < decision_boundary_list[0]) ,
+                    (data_list_list[1][kk] > decision_boundary_list[1])))/data_list_list[0].shape[1] for kk in range(-4,0)]
+    eg_confusion = [np.sum(np.bitwise_and((data_list_list[0][kk] > decision_boundary_list[0]) ,
+                    (data_list_list[1][kk] < decision_boundary_list[1])))/data_list_list[0].shape[1] for kk in range(-4,0)]
+    ee_confusion = [np.sum(np.bitwise_and((data_list_list[0][kk] > decision_boundary_list[0]) ,
+                    (data_list_list[1][kk] > decision_boundary_list[1])))/data_list_list[0].shape[1] for kk in range(-4,0)]
+    # print(gg_confusion)
+
+    four_confusion = np.array([gg_confusion, ge_confusion, eg_confusion, ee_confusion])
+
+    # print(four_confusion)
+
+#     print(np.dot(np.linalg.inv(total_confusion_matrix),total_confusion_matrix))
+
+    total_confusion_matrix_inv = np.linalg.inv(four_confusion)
+    state = np.array([gg[:-4],ge[:-4],eg[:-4],ee[:-4]])
+
+    # print(total_confusion_matrix)
+    # print(total_confusion_matrix_inv)
+
+    state_norm = np.dot(total_confusion_matrix_inv,state)
+
+    return state_norm
+
+#     print(state_norm.shape)
+
+    # plt.figure(figsize=(7,7))
+    # plt.plot(gg,label='gg')
+    # plt.plot(ge,label='ge')
+    # plt.plot(eg,label='eg')
+    # plt.plot(ee,label='ee')
+    #
+    # plt.legend()
+    #
+    #
+    # plt.figure(figsize=(7,7))
+    # plt.plot(state_norm[0],label='gg')
+    # plt.plot(state_norm[1],label='ge')
+    # plt.plot(state_norm[2],label='eg')
+    # plt.plot(state_norm[3],label='ee')
+    #
+    # plt.legend()
+
+
+
 def get_singleshot_data_two_qubits(single_data_list,pi_cal = False):
 
     decision_boundary_list = []
