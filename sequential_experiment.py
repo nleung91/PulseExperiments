@@ -9,7 +9,9 @@ from slab.dsfit import fitdecaysin
 
 from skopt import Optimizer
 
-from slab.experiments.PulseExperiments.get_data import get_singleshot_data_two_qubits_4_calibration,get_singleshot_data_two_qubits, data_to_correlators, two_qubit_quantum_state_tomography
+from slab.experiments.PulseExperiments.get_data import get_singleshot_data_two_qubits_4_calibration,\
+    get_singleshot_data_two_qubits, data_to_correlators, two_qubit_quantum_state_tomography,\
+    density_matrix_maximum_likelihood
 
 import pickle
 
@@ -837,17 +839,27 @@ def bell_entanglement_by_half_sideband_optimize_v4(quantum_device_cfg, experimen
 
             f_val_list = []
             for expt_id in range(sequence_num):
-                elem_list = list(range(expt_id*9,(expt_id+1)*9)) + [-4,-3,-2,-1]
+                elem_list = list(range(expt_id*17,(expt_id+1)*17)) + [-4,-3,-2,-1]
                 single_data_list = [single_data1[:,:,elem_list,:], single_data2[:,:,elem_list,:]]
                 state_norm = get_singleshot_data_two_qubits_4_calibration(single_data_list)
-                # print(state_norm.shape)
-                state_data = data_to_correlators(state_norm)
-                den_mat = two_qubit_quantum_state_tomography(state_data)
-                print(den_mat)
+
+                state_data = data_to_correlators(state_norm[:9])
+                den_mat_guess = two_qubit_quantum_state_tomography(state_data)
+
+                ew, ev = np.linalg.eigh(den_mat_guess)
+                pos_ew = [max(w,0) for w in ew]
+                pos_D = np.diag(pos_ew)
+                inv_ev = np.linalg.inv(ev)
+                pos_den_mat_guess = np.dot(np.dot(ev,pos_D),inv_ev)
+
+                den_mat_guess_input = pos_den_mat_guess[::-1,::-1]
+                den_mat_guess_input = np.real(den_mat_guess_input) - 1j*np.imag(den_mat_guess_input)
+
+                optimized_rho = density_matrix_maximum_likelihood(state_norm,den_mat_guess_input)
+
                 perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
                 perfect_bell_den_mat = np.outer(perfect_bell, perfect_bell)
-
-                fidelity = np.trace(np.dot(np.transpose(np.conjugate(perfect_bell_den_mat)),np.abs(den_mat) ))
+                fidelity = np.trace(np.dot(np.transpose(np.conjugate(perfect_bell_den_mat)),np.abs(optimized_rho) ))
 
                 f_val_list.append(1-fidelity)
             print(f_val_list)

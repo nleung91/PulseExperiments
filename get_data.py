@@ -770,11 +770,11 @@ def density_matrix_maximum_likelihood(m_ab, input_guess):
         x = convert_array_to_matrix(x_array)
         ew, ev = np.linalg.eigh(x)
 
-        return ew
+        return np.real(ew)
 
     def get_trace(x_array):
         x = convert_array_to_matrix(x_array)
-        return np.trace(x)
+        return np.real(np.trace(x))
 
 
     def get_conjugate_diff(x_array):
