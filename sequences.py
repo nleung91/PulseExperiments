@@ -822,7 +822,8 @@ class PulseSequences:
         sender_id = self.communication['sender_id']
         receiver_id = self.communication['receiver_id']
 
-        measurement_pulse = [['I','I'], ['I','X'],['I','Y'],['X','I'],['X','X'],['X','Y'],['Y','I'],['Y','X'],['Y','Y']]
+        measurement_pulse = [['I','I'], ['I','X'],['I','Y'],['X','I'],['X','X'],['X','Y'],['Y','I'],['Y','X'],['Y','Y'],
+                             ['I','-X'],['I','-Y'],['-X','I'],['-X','-X'],['-X','-Y'],['-Y','I'],['-Y','-X'],['-Y','-Y']]
 
 
         for expt_id in range(kwargs.get('sequence_num',1)):
