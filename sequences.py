@@ -93,8 +93,8 @@ class PulseSequences:
         A_list_2h = self.communication['2']['half_transfer_amp'] * np.ones_like(gauss_envelop)
 
         self.communication_flux_half_transfer = {
-            "1": ARB_freq_a(A_list = A_list_1, B_list = np.zeros_like(A_list_1h), len=self.communication['1']['half_transfer_len'], freq_a_fit = freq_a_p_1, phase = 0),
-            "2": ARB_freq_a(A_list = A_list_2, B_list = np.zeros_like(A_list_2h), len=self.communication['2']['half_transfer_len'], freq_a_fit = freq_a_p_2, phase = 0)
+            "1": ARB_freq_a(A_list = A_list_1h, B_list = np.zeros_like(A_list_1h), len=self.communication['1']['half_transfer_len'], freq_a_fit = freq_a_p_1, phase = 0),
+            "2": ARB_freq_a(A_list = A_list_2h, B_list = np.zeros_like(A_list_2h), len=self.communication['2']['half_transfer_len'], freq_a_fit = freq_a_p_2, phase = 0)
         }
 
 

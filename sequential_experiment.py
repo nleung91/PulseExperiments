@@ -734,7 +734,7 @@ def bell_entanglement_by_half_sideband_optimize_v4(quantum_device_cfg, experimen
 
     iteration_num = 20000
 
-    sequence_num = 20
+    sequence_num = 10
     expt_num = sequence_num
 
 
@@ -754,7 +754,7 @@ def bell_entanglement_by_half_sideband_optimize_v4(quantum_device_cfg, experimen
 
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
 
-    use_prev_model = True
+    use_prev_model = False
 
     for iteration in range(iteration_num):
         if iteration == 0 and use_prev_model:
@@ -843,6 +843,7 @@ def bell_entanglement_by_half_sideband_optimize_v4(quantum_device_cfg, experimen
                 # print(state_norm.shape)
                 state_data = data_to_correlators(state_norm)
                 den_mat = two_qubit_quantum_state_tomography(state_data)
+                print(den_mat)
                 perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
                 perfect_bell_den_mat = np.outer(perfect_bell, perfect_bell)
 
