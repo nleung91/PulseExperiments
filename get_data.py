@@ -1,5 +1,5 @@
 import numpy as np
-
+import scipy.optimize as spo
 
 def two_qubit_quantum_state_tomography(data):
 
@@ -687,3 +687,154 @@ def get_iq_data(expt_data,het_freq = 0.148, td=0, pi_cal = False):
             data_list = data_sin_list
 
     return data_cos_list, data_sin_list, data_list
+
+
+
+Nfeval = 0
+Xeval = []
+Cost = []
+
+
+def density_matrix_maximum_likelihood(m_ab, input_guess):
+
+    # Making Xguess equal to perfect bell
+#     perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
+#     perfect_bell_den_mat = np.outer(perfect_bell, perfect_bell)
+
+#     Xguess_real = perfect_bell_den_mat
+#     Xguess_imag = np.zeros((4,4))
+
+    Xguess_real = np.real(input_guess)
+    Xguess_imag = np.imag(input_guess)
+
+    Xguess = np.vstack((Xguess_real,Xguess_imag))
+
+
+
+
+    # Set boundary for allocation of each X to be between -1 and 1, between 0 and 1 if on diagonal
+    bnds = []
+    for m_ind in ['real','imag']:
+        for ii in range(4):
+            for jj in range(4):
+                if ii == jj:
+                    bnds.append((np.long(-1),np.long(1)))
+                else:
+                    bnds.append((np.long(-1),np.long(1)))
+
+
+
+
+    I = np.matrix([[1,0],[0,1]])
+    X = np.matrix([[0,1],[1,0]])
+    Y = np.matrix([[0,-1j],[1j,0]])
+    Z = np.matrix([[1,0],[0,-1]])
+    def get_Rx():
+        theta = np.pi/2
+        return np.cos(theta/2) * I -1j*np.sin(theta/2)*X
+
+    def get_Ry():
+        theta = np.pi/2
+        return np.cos(theta/2) * I -1j*np.sin(theta/2)*Y
+
+    def get_nRx():
+        theta = -np.pi/2
+        return np.cos(theta/2) * I -1j*np.sin(theta/2)*X
+
+    def get_nRy():
+        theta = -np.pi/2
+        return np.cos(theta/2) * I -1j*np.sin(theta/2)*Y
+
+    def get_identity():
+        return I
+
+
+    def convert_array_to_matrix(x_array):
+        x_real = x_array[0:16]
+        x_imag = np.multiply(x_array[16:32],1j)
+        x = x_real+x_imag
+        x = np.reshape(x,(4,4))
+        return x
+
+    measurement_pulse = [['I','I'], ['I','X'],['I','Y'],['X','I'],['X','X'],['X','Y'],['Y','I'],['Y','X'],['Y','Y'],
+                             ['I','-X'],['I','-Y'],['-X','I'],['-X','-X'],['-X','-Y'],['-Y','I'],['-Y','-X'],['-Y','-Y']]
+
+
+    R_dict = {'I':get_identity, 'X':get_Rx, 'Y': get_Ry, '-X':get_nRx, '-Y':get_nRy}
+
+    def get_rotation(m_pulse):
+
+        return np.kron(R_dict[m_pulse[0]](),R_dict[m_pulse[1]]())
+
+    def get_eigenvalues(x_array):
+        x = convert_array_to_matrix(x_array)
+        ew, ev = np.linalg.eigh(x)
+
+        return ew
+
+    def get_trace(x_array):
+        x = convert_array_to_matrix(x_array)
+        return np.trace(x)
+
+
+    def get_conjugate_diff(x_array):
+        x = convert_array_to_matrix(x_array)
+        xt = np.transpose(np.conjugate(x))
+
+        return np.sum(np.square(x-xt))
+
+
+    cons_list = []
+    cons_list.append({'type': 'ineq', 'fun': lambda x: get_eigenvalues(x)[0]})
+    cons_list.append({'type': 'ineq', 'fun': lambda x: get_eigenvalues(x)[1]})
+    cons_list.append({'type': 'ineq', 'fun': lambda x: get_eigenvalues(x)[2]})
+    cons_list.append({'type': 'ineq', 'fun': lambda x: get_eigenvalues(x)[3]})
+    cons_list.append({'type': 'eq', 'fun': lambda x: get_trace(x)-1})
+#     cons_list.append({'type': 'eq', 'fun': lambda x: get_conjugate_diff(x)-1})
+    cons = tuple(cons_list)
+
+    # error function
+    def error_function(x_array):
+
+        x = convert_array_to_matrix(x_array)
+
+        err = 0
+
+        for ii, m_pulse in enumerate(measurement_pulse):
+            rotation_pulse = get_rotation(m_pulse)
+
+            Ut_rho_U = np.dot(np.dot(np.linalg.inv(rotation_pulse),x),rotation_pulse)
+            for jj in range(4):
+                diff = Ut_rho_U[jj,jj] - m_ab[jj,ii]
+                err += np.absolute(diff)**2
+
+        return err
+
+
+
+    def callbackF(Xi):
+        global Nfeval
+        Nfeval += 1
+
+        cost = error_function(Xi)
+        # print(str(Nfeval)+ ': cost function: ' + str(cost))
+
+        global Xeval
+        Xeval.append(Xi)
+
+        global Cost
+        Cost.append(cost)
+
+
+
+    min_result = spo.minimize(error_function, Xguess, method='SLSQP', options={'disp': False,'maxiter':500}
+                              , bounds=bnds,constraints=cons,callback=callbackF)
+
+    # optimize allocation and Sharpe ratio
+    optimized_fun = min_result.fun
+    optimized_x = min_result.x
+
+    #print optimized_x
+    return convert_array_to_matrix(optimized_x)
+
+
