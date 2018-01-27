@@ -440,6 +440,23 @@ class PulseSequences:
 
         return sequencer.complete(self, plot=False)
 
+    def half_pi_phase(self, sequencer):
+        # ramsey sequences
+
+        for phase in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence(self)
+
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
+                half_pi = copy.copy(self.qubit_half_pi[qubit_id])
+                half_pi.phase = phase
+                sequencer.append('charge%s' % qubit_id, half_pi)
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=False)
+
     def echo(self, sequencer):
         # ramsey sequences
 
