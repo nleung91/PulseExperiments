@@ -802,7 +802,7 @@ def bell_entanglement_by_half_sideband_optimize_gp_v4(quantum_device_cfg, experi
             X_cand_top = X_cand_sort[:x_from_model_num-1]
 
             gp_sample = opt.space.inverse_transform(X_cand_top)
-            next_x_list.append(gp_sample)
+            next_x_list += gp_sample
 
             for ii in range(sequence_num-x_from_model_num):
                 x_list = []
