@@ -793,18 +793,19 @@ def bell_entanglement_by_half_sideband_optimize_gp_v4(quantum_device_cfg, experi
             gp_best = opt.ask()
             next_x_list.append(gp_best)
 
-            x_from_model_num = int(sequence_num/2)
+            random_sample_num = 2
+            x_from_model_num = sequence_num-random_sample_num-1
 
             X_cand = opt.space.transform(opt.space.rvs(n_samples=100000))
             X_cand_predict = opt.models[-1].predict(X_cand)
             X_cand_argsort = np.argsort(X_cand_predict)
             X_cand_sort = np.array([X_cand[ii] for ii in X_cand_argsort])
-            X_cand_top = X_cand_sort[:x_from_model_num-1]
+            X_cand_top = X_cand_sort[:x_from_model_num]
 
             gp_sample = opt.space.inverse_transform(X_cand_top)
             next_x_list += gp_sample
 
-            for ii in range(sequence_num-x_from_model_num):
+            for ii in range(random_sample_num):
                 x_list = []
                 for limit in limit_list:
                     sample = np.random.uniform(low=limit[0],high=limit[1])
