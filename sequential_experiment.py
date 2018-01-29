@@ -866,7 +866,7 @@ def bell_entanglement_by_half_sideband_optimize_gp_v4(quantum_device_cfg, experi
 
                 perfect_bell = np.array([0,1/np.sqrt(2),1/np.sqrt(2),0])
                 perfect_bell_den_mat = np.outer(perfect_bell, perfect_bell)
-                fidelity = np.trace(np.dot(np.transpose(np.conjugate(perfect_bell_den_mat)),np.abs(optimized_rho) ))
+                fidelity = np.trace(np.dot(np.transpose(np.conjugate(perfect_bell_den_mat)),np.abs(optimized_rho).clip(max=0.5) ))
 
                 f_val_list.append(1-fidelity)
             print(f_val_list)
