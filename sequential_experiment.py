@@ -1374,3 +1374,24 @@ def rabi_repeat(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
         exp.run_experiment(sequences, path, 'rabi', seq_data_file, update_awg = update_awg)
 
         update_awg = False
+
+
+def bell_repeat(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['bell_entanglement_by_half_sideband_tomography']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'bell_entanglement_by_half_sideband_tomography_repeat', suffix='.h5'))
+
+    repeat = 100
+
+    update_awg = True
+
+    for iteration in range(repeat):
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('bell_entanglement_by_half_sideband_tomography')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        exp.run_experiment(sequences, path, 'bell_entanglement_by_half_sideband_tomography', seq_data_file, update_awg = update_awg)
+
+        frequency_recalibrate_cycle = 10
+        if iteration % frequency_recalibrate_cycle == frequency_recalibrate_cycle-1:
+            qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardware_cfg, path)
