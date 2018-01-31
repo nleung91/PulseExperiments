@@ -1036,28 +1036,20 @@ class PulseSequences:
 
                     mm_id = list(map(int, self.expt_cfg['on_mms'][qubit_id]))
                     sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
-                    sequencer.append('flux%s'%qubit_id,
-                                     Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id[0]],
-                                            flat_len=self.multimodes[qubit_id]['pi_len'][mm_id[0]]/2,
-                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
-                                            cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id[0]], phase=0,
-                                            plot=False))
+
+                    half_sideband_pulse = copy.copy(self.mm_sideband_pi[qubit_id][mm_id[0]])
+                    half_sideband_pulse.flat_len = self.mm_sideband_pi[qubit_id][mm_id[0]].flat_len/2
+
+                    sequencer.append('flux%s'%qubit_id,half_sideband_pulse)
+                    
                     sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                     sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                     sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                     sequencer.append('flux%s'%qubit_id,
-                                     Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id[1]],
-                                            flat_len=self.multimodes[qubit_id]['pi_len'][mm_id[1]],
-                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
-                                            cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id[1]], phase=0,
-                                            plot=False))
+                                     self.mm_sideband_pi[qubit_id][mm_id[1]])
 
                     sequencer.append('flux%s'%qubit_id,
-                                     Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id[measure_id]],
-                                            flat_len=self.multimodes[qubit_id]['pi_len'][mm_id[measure_id]],
-                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
-                                            cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id[measure_id]], phase=0,
-                                            plot=False))
+                                     self.mm_sideband_pi[qubit_id][mm_id[measure_id]])
 
 
 
