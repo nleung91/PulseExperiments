@@ -65,6 +65,19 @@ class PulseSequences:
                    cutoff_sigma=2, freq=self.qubit_ef_freq["2"], phase=0, plot=False)}
 
         self.multimodes = self.quantum_device_cfg['multimodes']
+
+        self.mm_sideband_pi = {"1":[], "2":[]}
+
+        for qubit_id in ["1","2"]:
+            for mm_id in range(len(self.multimodes[qubit_id]['freq'])):
+                self.mm_sideband_pi[qubit_id].append(
+                                     Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id],
+                                            flat_len=self.multimodes[qubit_id]['pi_len'][mm_id],
+                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
+                                            cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id], phase=0,
+                                            plot=False))
+
+
         self.communication = self.quantum_device_cfg['communication']
         self.sideband_cooling = self.quantum_device_cfg['sideband_cooling']
 
