@@ -1009,6 +1009,52 @@ class PulseSequences:
 
         return sequencer.complete(self, plot=True)
 
+    def two_mode_ghz(self, sequencer):
+
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            for measure_id in [0,1]:
+                sequencer.new_sequence(self)
+
+                for qubit_id in self.expt_cfg['on_qubits']:
+
+                    rabi_pulse = copy.copy(self.qubit_pi[qubit_id])
+                    rabi_pulse.sigma_len = rabi_len
+                    sequencer.append('charge%s' % qubit_id, rabi_pulse)
+
+                    mm_id = list(map(int, self.expt_cfg['on_mms'][qubit_id]))
+                    sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
+                    sequencer.append('flux%s'%qubit_id,
+                                     Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id[0]],
+                                            flat_len=self.multimodes[qubit_id]['pi_len'][mm_id[0]]/2,
+                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
+                                            cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id[0]], phase=0,
+                                            plot=False))
+                    sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
+                    sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                    sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
+                    sequencer.append('flux%s'%qubit_id,
+                                     Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id[1]],
+                                            flat_len=self.multimodes[qubit_id]['pi_len'][mm_id[1]],
+                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
+                                            cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id[1]], phase=0,
+                                            plot=False))
+
+                    sequencer.append('flux%s'%qubit_id,
+                                     Square(max_amp=self.multimodes[qubit_id]['pi_amp'][mm_id[measure_id]],
+                                            flat_len=self.multimodes[qubit_id]['pi_len'][mm_id[measure_id]],
+                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
+                                            cutoff_sigma=2, freq=self.multimodes[qubit_id]['freq'][mm_id[measure_id]], phase=0,
+                                            plot=False))
+
+
+
+
+                self.readout(sequencer)
+
+                sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=True)
+
     def alazar_test(self, sequencer):
         # drag_rabi sequences
 
