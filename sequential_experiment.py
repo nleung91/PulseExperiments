@@ -149,6 +149,39 @@ def multimode_rabi_pi_calibrate(quantum_device_cfg, experiment_cfg, hardware_cfg
                     json.dump(quantum_device_cfg, f)
 
 
+def multimode_ef_rabi_pi_calibrate(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['multimode_ef_rabi']
+    data_path = os.path.join(path, 'data/')
+    on_qubits = expt_cfg['on_qubits']
+
+    on_mms_list = np.arange(1,9)
+
+    for on_mms in on_mms_list:
+
+        for qubit_id in expt_cfg['on_qubits']:
+            experiment_cfg['multimode_ef_rabi']['on_mms'][qubit_id] = int(on_mms)
+
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('multimode_ef_rabi')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        data_file = exp.run_experiment(sequences, path, 'multimode_ef_rabi')
+        expt_pts = np.arange(expt_cfg['start'], expt_cfg['stop'], expt_cfg['step'])
+        with SlabFile(data_file) as a:
+            for qubit_id in on_qubits:
+                expt_avg_data = np.array(a['expt_avg_data_ch%s'%qubit_id])
+
+                data_list = np.array(a['expt_avg_data_ch%s'%qubit_id])
+                fitdata = fitdecaysin(expt_pts[1:],data_list[1:],showfit=True)
+
+                pi_length = round((-fitdata[2]%180 + 90)/(360*fitdata[1]),5)
+                print("Flux pi length ge: %s" %pi_length)
+
+                quantum_device_cfg['multimodes'][qubit_id]['ef_pi_len'][on_mms] = pi_length
+                with open(os.path.join(path, 'quantum_device_config.json'), 'w') as f:
+                    json.dump(quantum_device_cfg, f)
+
+
 def multimode_t1(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['multimode_t1']
     data_path = os.path.join(path, 'data/')

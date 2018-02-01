@@ -217,21 +217,51 @@ class PulseSequences:
     def ef_sideband_rabi_freq(self, sequencer):
         # sideband rabi freq sweep
         rabi_len = self.expt_cfg['pulse_len']
-        for rabi_freq in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+
+        if self.expt_cfg["around"] == "comm":
+            amp = self.expt_cfg['amp']
+
+            qubit_id = self.expt_cfg['on_qubits'][0]
+
+            with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_500kHz.pkl' %qubit_id), 'rb') as f:
+                freq_a_p = pickle.load(f)
+
+            center_freq = freq_a_p(amp)
+            print("center freq: %s" %center_freq)
+            freq_array = np.arange(center_freq-self.expt_cfg['freq_range'],center_freq+self.expt_cfg['freq_range'],self.expt_cfg['step'])
+
+        elif self.expt_cfg["around"] == "mm":
+
+            qubit_id = self.expt_cfg['on_qubits'][0]
+            mm_freq_list = self.quantum_device_cfg['multimodes'][qubit_id]['ef_freq']
+            freq_list_all = []
+            for mm_freq in mm_freq_list:
+                freq_list_all += [np.arange(mm_freq-self.expt_cfg['freq_range'],mm_freq+self.expt_cfg['freq_range'],self.expt_cfg['step'])]
+
+            freq_array = np.hstack(np.array(freq_list_all))
+
+            # print(freq_array)
+        else:
+            freq_array = np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step'])
+
+        for rabi_freq in freq_array:
             sequencer.new_sequence(self)
 
             for qubit_id in self.expt_cfg['on_qubits']:
-                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s'%qubit_id, self.qubit_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
                 sequencer.sync_channels_time(self.channels)
                 sequencer.append('flux%s'%qubit_id,
-                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len, ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'], cutoff_sigma=2, freq=rabi_freq, phase=0,
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len,
+                                        ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
+                                        cutoff_sigma=2, freq=rabi_freq, phase=0,
                                         plot=False))
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
         return sequencer.complete(self,plot=False)
+
 
 
     def pulse_probe(self, sequencer):
@@ -655,6 +685,28 @@ class PulseSequences:
 
         return sequencer.complete(self, plot=False)
 
+    def multimode_ef_rabi(self, sequencer):
+        # mm rabi sequences
+
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence(self)
+
+            for qubit_id in self.expt_cfg['on_qubits']:
+                mm_id = self.expt_cfg['on_mms'][qubit_id]
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
+                sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
+                sequencer.append('flux%s'%qubit_id,
+                                 Square(max_amp=self.multimodes[qubit_id]['ef_pi_amp'][mm_id], flat_len=rabi_len, ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
+                                        cutoff_sigma=2, freq=self.multimodes[qubit_id]['ef_freq'][mm_id], phase=0,
+                                        plot=False))
+
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=False)
+
     def multimode_t1(self, sequencer):
         # multimode t1 sequences
 
@@ -1041,7 +1093,7 @@ class PulseSequences:
                     half_sideband_pulse.flat_len = self.mm_sideband_pi[qubit_id][mm_id[0]].flat_len/2
 
                     sequencer.append('flux%s'%qubit_id,half_sideband_pulse)
-                    
+
                     sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
                     sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                     sequencer.sync_channels_time(['charge%s' % qubit_id, 'flux%s' % qubit_id])
