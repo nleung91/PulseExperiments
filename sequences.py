@@ -256,11 +256,13 @@ class PulseSequences:
                                         ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info'][qubit_id]['ramp_sigma_len'],
                                         cutoff_sigma=2, freq=rabi_freq, phase=0,
                                         plot=False))
+                sequencer.sync_channels_time(self.channels)
+                sequencer.append('charge%s'%qubit_id, self.qubit_pi[qubit_id])
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self,plot=False)
+        return sequencer.complete(self,plot=True)
 
 
 

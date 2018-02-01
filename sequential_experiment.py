@@ -1389,6 +1389,24 @@ def sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cf
         exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
         exp.run_experiment(sequences, path, 'sideband_rabi_freq', seq_data_file)
 
+def ef_sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['ef_sideband_rabi_freq']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'ef_sideband_rabi_freq_amp_sweep', suffix='.h5'))
+
+    amp_start = 0.70
+    amp_stop = 0.0
+    amp_step = -0.02
+
+    for amp in np.arange(amp_start, amp_stop,amp_step):
+        experiment_cfg['ef_sideband_rabi_freq']['amp'] = amp
+        experiment_cfg['ef_sideband_rabi_freq']['pulse_len'] = 90*amp_start/amp
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('ef_sideband_rabi_freq')
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        exp.run_experiment(sequences, path, 'ef_sideband_rabi_freq', seq_data_file)
+
 
 def rabi_repeat(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['rabi']
