@@ -335,13 +335,13 @@ class PulseSequences:
 
         for ii in range(50):
 
-            # no pi pulse
+            # no pi pulse (g state)
             sequencer.new_sequence(self)
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
             sequencer.end_sequence()
 
-            # with pi pulse
+            # with pi pulse (e state)
             sequencer.new_sequence(self)
 
             for qubit_id in self.expt_cfg['on_qubits']:
@@ -349,7 +349,16 @@ class PulseSequences:
             self.readout(sequencer, self.expt_cfg['on_qubits'])
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+            # with pi pulse and ef pi pulse (f state)
+            sequencer.new_sequence(self)
+
+            for qubit_id in self.expt_cfg['on_qubits']:
+                sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
+                sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
+            self.readout(sequencer, self.expt_cfg['on_qubits'])
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=True)
 
 
     def t1(self, sequencer):
