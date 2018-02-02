@@ -1394,6 +1394,7 @@ def ef_sideband_rabi_freq_amp_sweep(quantum_device_cfg, experiment_cfg, hardware
     data_path = os.path.join(path, 'data/')
     seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'ef_sideband_rabi_freq_amp_sweep', suffix='.h5'))
 
+    amp_start = 0.4
     amp_stop = 0.0
     amp_step = -0.005
 
