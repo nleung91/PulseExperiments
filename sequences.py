@@ -223,7 +223,7 @@ class PulseSequences:
 
             qubit_id = self.expt_cfg['on_qubits'][0]
 
-            with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_500kHz.pkl' %qubit_id), 'rb') as f:
+            with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_ef_1MHz.pkl' %qubit_id), 'rb') as f:
                 freq_a_p = pickle.load(f)
 
             center_freq = freq_a_p(amp)
