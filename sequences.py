@@ -110,12 +110,28 @@ class PulseSequences:
             "2": ARB_freq_a(A_list = A_list_2h, B_list = np.zeros_like(A_list_2h), len=self.communication['2']['half_transfer_len'], freq_a_fit = freq_a_p_2, phase = 0)
         }
 
+        readout_sideband_amp = 0.05
+        readout_sideband_detune = 0.01
+
+        self.readout_sideband = {
+            "1": Square(max_amp=readout_sideband_amp,
+                                            flat_len=self.quantum_device_cfg['heterodyne']['1']['length'],
+                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info']['1']['ramp_sigma_len'],
+                                            cutoff_sigma=2, freq=self.multimodes['1']['freq'][0] - readout_sideband_detune, phase=0,
+                                            plot=False),
+            "2": Square(max_amp=readout_sideband_amp,
+                                            flat_len=self.quantum_device_cfg['heterodyne']['2']['length'],
+                                            ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info']['2']['ramp_sigma_len'],
+                                            cutoff_sigma=2, freq=self.multimodes['2']['freq'][0] - readout_sideband_detune, phase=0,
+                                            plot=False)
+        }
+
 
     def __init__(self, quantum_device_cfg, experiment_cfg, hardware_cfg):
         self.set_parameters(quantum_device_cfg, experiment_cfg, hardware_cfg)
 
 
-    def readout(self, sequencer, on_qubits=None):
+    def readout(self, sequencer, on_qubits=None, sideband = False):
         if on_qubits == None:
             on_qubits = ["1", "2"]
 
@@ -143,6 +159,8 @@ class PulseSequences:
                                     flat_len=heterodyne_cfg[qubit_id]['length'],
                                     ramp_sigma_len=20, cutoff_sigma=2, freq=heterodyne_cfg[qubit_id]['freq'],
                                     phase=np.pi / 2 + heterodyne_cfg[qubit_id]['phase_offset'], phase_t0=readout_time_5ns_multiple))
+            if sideband:
+                sequencer.append('flux%s'%qubit_id,self.readout_sideband[qubit_id])
             sequencer.append('readout%s_trig' % qubit_id, Ones(time=heterodyne_cfg[qubit_id]['length']))
 
         sequencer.append('alazar_trig', Ones(time=self.hardware_cfg['trig_pulse_len']['alazar']))
@@ -338,7 +356,7 @@ class PulseSequences:
             # no pi pulse (g state)
             sequencer.new_sequence(self)
 
-            self.readout(sequencer, self.expt_cfg['on_qubits'])
+            self.readout(sequencer, self.expt_cfg['on_qubits'], sideband=True)
             sequencer.end_sequence()
 
             # with pi pulse (e state)
@@ -346,7 +364,7 @@ class PulseSequences:
 
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
-            self.readout(sequencer, self.expt_cfg['on_qubits'])
+            self.readout(sequencer, self.expt_cfg['on_qubits'], sideband=True)
             sequencer.end_sequence()
 
             # with pi pulse and ef pi pulse (f state)
@@ -355,10 +373,10 @@ class PulseSequences:
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, self.qubit_ef_pi[qubit_id])
-            self.readout(sequencer, self.expt_cfg['on_qubits'])
+            self.readout(sequencer, self.expt_cfg['on_qubits'], sideband=True)
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=True)
+        return sequencer.complete(self, plot=False)
 
 
     def t1(self, sequencer):
