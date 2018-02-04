@@ -110,19 +110,17 @@ class PulseSequences:
             "2": ARB_freq_a(A_list = A_list_2h, B_list = np.zeros_like(A_list_2h), len=self.communication['2']['half_transfer_len'], freq_a_fit = freq_a_p_2, phase = 0)
         }
 
-        readout_sideband_amp = 0.05
-        readout_sideband_detune = 0.01
 
         self.readout_sideband = {
-            "1": Square(max_amp=readout_sideband_amp,
+            "1": Square(max_amp=self.quantum_device_cfg['heterodyne']['1']['sideband_amp'],
                                             flat_len=self.quantum_device_cfg['heterodyne']['1']['length'],
                                             ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info']['1']['ramp_sigma_len'],
-                                            cutoff_sigma=2, freq=self.multimodes['1']['freq'][0] - readout_sideband_detune, phase=0,
+                                            cutoff_sigma=2, freq=self.multimodes['1']['freq'][0] - self.quantum_device_cfg['heterodyne']['1']['sideband_detune'], phase=0,
                                             plot=False),
-            "2": Square(max_amp=readout_sideband_amp,
+            "2": Square(max_amp=self.quantum_device_cfg['heterodyne']['2']['sideband_amp'],
                                             flat_len=self.quantum_device_cfg['heterodyne']['2']['length'],
                                             ramp_sigma_len=self.quantum_device_cfg['flux_pulse_info']['2']['ramp_sigma_len'],
-                                            cutoff_sigma=2, freq=self.multimodes['2']['freq'][0] - readout_sideband_detune, phase=0,
+                                            cutoff_sigma=2, freq=self.multimodes['2']['freq'][0] - self.quantum_device_cfg['heterodyne']['2']['sideband_detune'], phase=0,
                                             plot=False)
         }
 
