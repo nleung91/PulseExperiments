@@ -508,7 +508,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def half_pi_phase(self, sequencer):
         # ramsey sequences
