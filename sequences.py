@@ -440,7 +440,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=True)
+        return sequencer.complete(self, plot=False)
 
     def ef_ramsey(self, sequencer):
         # ef ramsey sequences
@@ -508,7 +508,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=True)
+        return sequencer.complete(self, plot=False)
 
     def half_pi_phase(self, sequencer):
         # ramsey sequences
