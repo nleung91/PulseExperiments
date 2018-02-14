@@ -772,6 +772,79 @@ class PulseSequences:
 
         return sequencer.complete(self, plot=True)
 
+    def heralding_protocol_tomography(self, sequencer, **kwargs):
+        # mm rabi sequences
+
+        measurement_pulse = [['I','I'], ['I','X'],['I','Y'],['X','I'],['X','X'],['X','Y'],['Y','I'],['Y','X'],['Y','Y'],
+                             ['I','-X'],['I','-Y'],['-X','I'],['-X','-X'],['-X','-Y'],['-Y','I'],['-Y','-X'],['-Y','-Y']]
+
+        for qubit_measure in measurement_pulse:
+            sequencer.new_sequence(self)
+
+            sender_id = self.communication['sender_id']
+            receiver_id = self.communication['receiver_id']
+
+            sequencer.append('charge%s' % sender_id, self.qubit_half_pi[sender_id])
+            sequencer.append('charge%s' % sender_id, self.qubit_ef_pi[sender_id])
+            sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
+
+            sequencer.append('flux%s'%sender_id,self.communication_flux_ef_pi[sender_id])
+
+            sequencer.append('flux%s'%receiver_id,self.communication_flux_pi_v2[receiver_id])
+
+            sequencer.sync_channels_time(self.channels)
+
+            sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
+            sequencer.append('charge%s' % sender_id, self.qubit_ef_pi[sender_id])
+            sequencer.append('charge%s' % receiver_id, self.qubit_ef_pi[receiver_id])
+
+            sequencer.sync_channels_time(self.channels)
+            sequencer.append('flux%s'%sender_id,self.communication_flux_ef_pi[sender_id])
+
+            sequencer.append('flux%s'%receiver_id,self.communication_flux_pi_v2[receiver_id])
+
+            sequencer.sync_channels_time(self.channels)
+
+            qubit_1_measure = qubit_measure[0]
+            qubit_2_measure = qubit_measure[1]
+
+            if qubit_1_measure == 'X':
+                m_pulse = copy.copy(self.qubit_half_pi['1'])
+                sequencer.append('charge%s' % '1', m_pulse)
+            elif qubit_1_measure == 'Y':
+                m_pulse = copy.copy(self.qubit_half_pi['1'])
+                m_pulse.phase = np.pi/2
+                sequencer.append('charge%s' % '1', m_pulse)
+            elif qubit_1_measure == '-X':
+                m_pulse = copy.copy(self.qubit_half_pi['1'])
+                m_pulse.phase = -np.pi
+                sequencer.append('charge%s' % '1', m_pulse)
+            elif qubit_1_measure == '-Y':
+                m_pulse = copy.copy(self.qubit_half_pi['1'])
+                m_pulse.phase = -np.pi/2
+                sequencer.append('charge%s' % '1', m_pulse)
+
+            if qubit_2_measure == 'X':
+                m_pulse = copy.copy(self.qubit_ef_half_pi['2'])
+                sequencer.append('charge%s' % '2', m_pulse)
+            elif qubit_2_measure == 'Y':
+                m_pulse = copy.copy(self.qubit_ef_half_pi['2'])
+                m_pulse.phase = np.pi/2
+                sequencer.append('charge%s' % '2', m_pulse)
+            elif qubit_2_measure == '-X':
+                m_pulse = copy.copy(self.qubit_ef_half_pi['2'])
+                m_pulse.phase = -np.pi
+                sequencer.append('charge%s' % '2', m_pulse)
+            elif qubit_2_measure == '-Y':
+                m_pulse = copy.copy(self.qubit_ef_half_pi['2'])
+                m_pulse.phase = -np.pi/2
+                sequencer.append('charge%s' % '2', m_pulse)
+
+            self.readout(sequencer, self.expt_cfg.get('on_qubits',["1","2"]))
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=True)
 
     def photon_transfer_arb(self, sequencer, **kwargs):
         # mm rabi sequences
