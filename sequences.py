@@ -735,6 +735,44 @@ class PulseSequences:
 
         return sequencer.complete(self, plot=True)
 
+    def ef_send_ge_rece_photon_transfer_fix_sideband(self, sequencer, **kwargs):
+        # mm rabi sequences
+
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence(self)
+
+            sender_id = self.communication['sender_id']
+            receiver_id = self.communication['receiver_id']
+
+            rabi_pulse = copy.copy(self.qubit_pi[sender_id])
+            rabi_pulse.sigma_len = rabi_len
+
+            sequencer.append('charge%s' % sender_id, rabi_pulse)
+            sequencer.append('charge%s' % sender_id, self.qubit_ef_pi[sender_id])
+            sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
+
+            sequencer.append('flux%s'%sender_id,self.communication_flux_ef_pi[sender_id])
+
+            sequencer.append('flux%s'%receiver_id,self.communication_flux_pi_v2[receiver_id])
+
+            sequencer.sync_channels_time(self.channels)
+
+            sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
+            sequencer.append('charge%s' % sender_id, self.qubit_ef_pi[sender_id])
+            sequencer.append('charge%s' % receiver_id, self.qubit_ef_pi[receiver_id])
+
+            sequencer.sync_channels_time(self.channels)
+            sequencer.append('flux%s'%sender_id,self.communication_flux_ef_pi[sender_id])
+
+            sequencer.append('flux%s'%receiver_id,self.communication_flux_pi_v2[receiver_id])
+
+            self.readout(sequencer, self.expt_cfg.get('on_qubits',["1","2"]))
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=True)
+
+
     def photon_transfer_arb(self, sequencer, **kwargs):
         # mm rabi sequences
 
