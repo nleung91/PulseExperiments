@@ -735,7 +735,7 @@ class PulseSequences:
 
         return sequencer.complete(self, plot=True)
 
-    def ef_send_ge_rece_photon_transfer_fix_sideband(self, sequencer, **kwargs):
+    def heralding_protocol_test(self, sequencer, **kwargs):
         # mm rabi sequences
 
         for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
