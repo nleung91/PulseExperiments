@@ -88,6 +88,12 @@ class PulseSequences:
         with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/2_100kHz.pkl'), 'rb') as f:
             freq_a_p_2 = pickle.load(f)
 
+        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/1_ef_100kHz.pkl'), 'rb') as f:
+            ef_freq_a_p_1 = pickle.load(f)
+
+        with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/2_ef_100kHz.pkl'), 'rb') as f:
+            ef_freq_a_p_2 = pickle.load(f)
+
         gauss_z = np.linspace(-2,2,20)
         gauss_envelop = np.exp(-gauss_z**2)
 
@@ -97,6 +103,14 @@ class PulseSequences:
         self.communication_flux_pi = {
             "1": ARB_freq_a(A_list = A_list_1, B_list = np.zeros_like(A_list_1), len=self.communication['1']['pi_len'], freq_a_fit = freq_a_p_1, phase = 0),
             "2": ARB_freq_a(A_list = A_list_2, B_list = np.zeros_like(A_list_2), len=self.communication['2']['pi_len'], freq_a_fit = freq_a_p_2, phase = 0)
+        }
+
+        A_list_ef_1 = self.communication['1']['ef_pi_amp'] * np.ones_like(gauss_envelop)
+        A_list_ef_2 = self.communication['2']['ef_pi_amp'] * np.ones_like(gauss_envelop)
+
+        self.communication_flux_ef_pi = {
+            "1": ARB_freq_a(A_list = A_list_ef_1, B_list = np.zeros_like(A_list_ef_1), len=self.communication['1']['ef_pi_len'], freq_a_fit = ef_freq_a_p_1, phase = 0),
+            "2": ARB_freq_a(A_list = A_list_ef_2, B_list = np.zeros_like(A_list_ef_2), len=self.communication['2']['ef_pi_len'], freq_a_fit = ef_freq_a_p_2, phase = 0)
         }
 
         gauss_z = np.linspace(-2,2,20)
@@ -650,6 +664,63 @@ class PulseSequences:
             sequencer.end_sequence()
 
         return sequencer.complete(self, plot=False)
+
+    def ef_send_ge_rece_photon_transfer(self, sequencer, **kwargs):
+        # mm rabi sequences
+
+        for rabi_len in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            sequencer.new_sequence(self)
+
+            sender_id = self.communication['sender_id']
+            receiver_id = self.communication['receiver_id']
+
+            sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
+            sequencer.append('charge%s' % sender_id, self.qubit_ef_pi[sender_id])
+            sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
+
+            # if "freq_a" in self.expt_cfg["use_fit"]:
+            #
+            #     with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_ef_100kHz.pkl'%sender_id), 'rb') as f:
+            #         freq_a_p_send = pickle.load(f)
+            #
+            #     freq_send = freq_a_p_send(self.communication[sender_id]['ef_pi_amp'])
+            #
+            #     with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_100kHz.pkl'%receiver_id), 'rb') as f:
+            #         freq_a_p_rece = pickle.load(f)
+            #
+            #     freq_rece = freq_a_p_rece(self.communication[receiver_id]['pi_amp'])
+            # else:
+            #     freq_send = self.communication[sender_id]['freq']
+            #     freq_rece = self.communication[receiver_id]['freq']
+
+            if self.expt_cfg['rece_delay'] < 0:
+                sequencer.append('flux%s'%sender_id,
+                                 Idle(time=abs(self.expt_cfg['rece_delay'])))
+
+            flux_pulse = copy.copy(self.communication_flux_ef_pi[sender_id])
+            flux_pulse.len = rabi_len
+            # flux_pulse.delta_freq = 0.001
+            if 'send_A_list' in kwargs:
+                flux_pulse.A_list = kwargs['send_A_list']
+            sequencer.append('flux%s'%sender_id,flux_pulse)
+
+            if self.expt_cfg['rece_delay'] > 0:
+                sequencer.append('flux%s'%receiver_id,
+                                 Idle(time=self.expt_cfg['rece_delay']))
+
+            flux_pulse = copy.copy(self.communication_flux_pi[receiver_id])
+            flux_pulse.len = rabi_len
+            # flux_pulse.plot = True
+            if 'rece_A_list' in kwargs:
+                flux_pulse.A_list = kwargs['rece_A_list']
+            sequencer.append('flux%s'%receiver_id,flux_pulse)
+
+
+            self.readout(sequencer, self.expt_cfg.get('on_qubits',["1","2"]))
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=True)
 
     def photon_transfer_arb(self, sequencer, **kwargs):
         # mm rabi sequences
