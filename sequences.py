@@ -715,6 +715,11 @@ class PulseSequences:
                 flux_pulse.A_list = kwargs['rece_A_list']
             sequencer.append('flux%s'%receiver_id,flux_pulse)
 
+            sequencer.sync_channels_time(self.channels)
+
+            sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
+            sequencer.append('charge%s' % sender_id, self.qubit_ef_pi[sender_id])
+            sequencer.append('charge%s' % receiver_id, self.qubit_ef_pi[receiver_id])
 
             self.readout(sequencer, self.expt_cfg.get('on_qubits',["1","2"]))
 
