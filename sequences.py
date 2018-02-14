@@ -105,6 +105,14 @@ class PulseSequences:
             "2": ARB_freq_a(A_list = A_list_2, B_list = np.zeros_like(A_list_2), len=self.communication['2']['pi_len'], freq_a_fit = freq_a_p_2, phase = 0)
         }
 
+        A_list_1_v2 = self.communication['1']['pi_amp_v2'] * np.ones_like(gauss_envelop)
+        A_list_2_v2 = self.communication['2']['pi_amp_v2'] * np.ones_like(gauss_envelop)
+
+        self.communication_flux_pi_v2 = {
+            "1": ARB_freq_a(A_list = A_list_1_v2, B_list = np.zeros_like(A_list_1_v2), len=self.communication['1']['pi_len_v2'], freq_a_fit = freq_a_p_1, phase = 0),
+            "2": ARB_freq_a(A_list = A_list_2_v2, B_list = np.zeros_like(A_list_2_v2), len=self.communication['2']['pi_len_v2'], freq_a_fit = freq_a_p_2, phase = 0)
+        }
+
         A_list_ef_1 = self.communication['1']['ef_pi_amp'] * np.ones_like(gauss_envelop)
         A_list_ef_2 = self.communication['2']['ef_pi_amp'] * np.ones_like(gauss_envelop)
 
@@ -708,7 +716,7 @@ class PulseSequences:
                 sequencer.append('flux%s'%receiver_id,
                                  Idle(time=self.expt_cfg['rece_delay']))
 
-            flux_pulse = copy.copy(self.communication_flux_pi[receiver_id])
+            flux_pulse = copy.copy(self.communication_flux_pi_v2[receiver_id])
             flux_pulse.len = rabi_len
             # flux_pulse.plot = True
             if 'rece_A_list' in kwargs:
