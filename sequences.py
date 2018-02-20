@@ -525,10 +525,13 @@ class PulseSequences:
             for qubit_id in self.expt_cfg['on_qubits']:
                 sequencer.append('charge%s' % qubit_id, self.qubit_half_pi[qubit_id])
                 sequencer.append('charge%s' % qubit_id, Idle(time=ramsey_len))
-                sequencer.append('charge%s' % qubit_id,
-                                 Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_amp'],
-                                       sigma_len=self.pulse_info[qubit_id]['half_pi_len'], cutoff_sigma=2,
-                                       freq=self.qubit_freq[qubit_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'], plot=False))
+                ramsey_2nd_pulse = copy.copy(self.qubit_half_pi[qubit_id])
+                ramsey_2nd_pulse.phase = 2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq']
+                sequencer.append('charge%s' % qubit_id, ramsey_2nd_pulse)
+                # sequencer.append('charge%s' % qubit_id,
+                #                  Gauss(max_amp=self.pulse_info[qubit_id]['half_pi_amp'],
+                #                        sigma_len=self.pulse_info[qubit_id]['half_pi_len'], cutoff_sigma=2,
+                #                        freq=self.qubit_freq[qubit_id], phase=2*np.pi*ramsey_len*self.expt_cfg['ramsey_freq'], plot=False))
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
             sequencer.end_sequence()
