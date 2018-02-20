@@ -330,10 +330,13 @@ class PulseSequences:
             sequencer.new_sequence(self)
 
             for qubit_id in self.expt_cfg['on_qubits']:
+                # sequencer.append('charge%s' % qubit_id,
+                #                  Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len, cutoff_sigma=2,
+                #                        freq=self.qubit_freq[qubit_id], phase=0,
+                #                        plot=False))
                 sequencer.append('charge%s' % qubit_id,
-                                 Gauss(max_amp=self.expt_cfg['amp'], sigma_len=rabi_len, cutoff_sigma=2,
-                                       freq=self.qubit_freq[qubit_id], phase=0,
-                                       plot=False))
+                                 Square(max_amp=self.expt_cfg['amp'], flat_len=rabi_len,
+                                        ramp_sigma_len=0.001, cutoff_sigma=2, freq=self.qubit_freq[qubit_id], phase=0))
 
             self.readout(sequencer, self.expt_cfg['on_qubits'])
 
