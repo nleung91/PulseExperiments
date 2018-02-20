@@ -4,6 +4,104 @@ from sklearn import linear_model
 from sklearn import metrics
 from collections import Counter
 
+from sklearn import linear_model
+from sklearn import metrics
+from collections import Counter
+def get_singleshot_data_two_qubits_4_calibration_v2(single_data_list):
+
+
+    X_list = []
+
+    qubit_state = ['g','e']
+
+    # print(single_data_list[0].shape)
+
+    ii = -4
+
+    for qubit_1_state in qubit_state:
+        for qubit_2_state in qubit_state:
+
+            qubit_1_ss_cos = single_data_list[0][0][0][ii]
+            qubit_1_ss_sin = single_data_list[0][0][1][ii]
+            qubit_2_ss_cos = single_data_list[1][1][0][ii]
+            qubit_2_ss_sin = single_data_list[1][1][1][ii]
+
+            X_state = np.array([qubit_1_ss_cos,qubit_1_ss_sin, qubit_2_ss_cos, qubit_2_ss_sin ])
+
+            X_list.append(X_state)
+
+            ii+=1
+
+    Y_list = []
+
+    for ii in range(4):
+        Y_list.append(ii*np.ones(X_list[0].shape[1]))
+
+
+    X = np.transpose(np.hstack(X_list))
+    Y = np.vstack((Y_list)).flatten()
+
+
+    ### copy from example
+    h = .002  # step size in the mesh
+
+    logreg = linear_model.LogisticRegression(C=1e5,multi_class='multinomial',solver='lbfgs')
+
+    # we create an instance of Neighbours Classifier and fit the data.
+    logreg.fit(X, Y)
+
+    Y_pred = logreg.predict(X)
+
+    confusion_matrix = metrics.confusion_matrix(Y,Y_pred)
+
+    # print(confusion_matrix)
+
+    confusion_matrix_inv = np.linalg.inv(confusion_matrix)
+
+
+    # print(single_data_list[0].shape[-2])
+    counter_array_list = []
+    for ii in range(single_data_list[0].shape[-2]-4):
+        qubit_1_ss_cos = single_data_list[0][0][0][ii]
+        qubit_1_ss_sin = single_data_list[0][0][1][ii]
+        qubit_2_ss_cos = single_data_list[1][1][0][ii]
+        qubit_2_ss_sin = single_data_list[1][1][1][ii]
+
+        X_state = np.array([qubit_1_ss_cos,qubit_1_ss_sin, qubit_2_ss_cos, qubit_2_ss_sin ])
+
+        data_X = np.transpose(X_state)
+        data_Y = logreg.predict(data_X)
+
+        counter = Counter(data_Y)
+#         print(counter)
+
+        counter_array = np.zeros(4)
+        for key, value in counter.items():
+            counter_array[int(key)] = value
+
+        counter_array_list.append(counter_array)
+#         print(counter_array)
+
+    counter_array_list = np.array(counter_array_list)
+
+#     print(counter_array_list[-9:,:])
+
+#     print(np.dot(confusion_matrix_inv,counter_array_list[-9:,:]))
+
+    # print(counter_array_list.shape)
+    state_norm = np.dot(np.transpose(confusion_matrix_inv),np.transpose(counter_array_list))
+
+#     print(state_norm[-9:,:])
+
+    # plt.figure(figsize=(7,7))
+    # plt.plot(state_norm[0],label='gg')
+    # plt.plot(state_norm[1],label='ge')
+    # plt.plot(state_norm[2],label='eg')
+    # plt.plot(state_norm[3],label='ee')
+    # plt.legend(bbox_to_anchor=(1, 0.8))
+
+    return state_norm
+
 def get_singleshot_data_two_qubits_9_calibration(single_data_list):
 
 

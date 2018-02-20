@@ -550,7 +550,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
     def half_pi_phase(self, sequencer):
         # ramsey sequences
@@ -691,7 +691,7 @@ class PulseSequences:
 
             sequencer.end_sequence()
 
-        return sequencer.complete(self, plot=False)
+        return sequencer.complete(self, plot=True)
 
 
     def heralding_only_ge_test(self, sequencer, **kwargs):
