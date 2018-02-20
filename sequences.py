@@ -40,17 +40,31 @@ class PulseSequences:
 
         self.pulse_info = self.quantum_device_cfg['pulse_info']
 
+
+
         self.qubit_pi = {
-        "1": Gauss(max_amp=self.pulse_info['1']['pi_amp'], sigma_len=self.pulse_info['1']['pi_len'], cutoff_sigma=2,
-                   freq=self.qubit_freq["1"], phase=0, plot=False),
-        "2": Gauss(max_amp=self.pulse_info['2']['pi_amp'], sigma_len=self.pulse_info['2']['pi_len'], cutoff_sigma=2,
-                   freq=self.qubit_freq["2"], phase=0, plot=False)}
+        "1": Square(max_amp=self.pulse_info['1']['pi_amp'], flat_len=self.pulse_info['1']['pi_len'],
+                                        ramp_sigma_len=0.001, cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0),
+        "2": Square(max_amp=self.pulse_info['2']['pi_amp'], flat_len=self.pulse_info['2']['pi_len'],
+                                        ramp_sigma_len=0.001, cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0)}
 
         self.qubit_half_pi = {
-        "1": Gauss(max_amp=self.pulse_info['1']['half_pi_amp'], sigma_len=self.pulse_info['1']['half_pi_len'],
-                   cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0, plot=False),
-        "2": Gauss(max_amp=self.pulse_info['2']['half_pi_amp'], sigma_len=self.pulse_info['2']['half_pi_len'],
-                   cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0, plot=False)}
+        "1": Square(max_amp=self.pulse_info['1']['half_pi_amp'], flat_len=self.pulse_info['1']['half_pi_len'],
+                                        ramp_sigma_len=0.001, cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0),
+        "2": Square(max_amp=self.pulse_info['2']['half_pi_amp'], flat_len=self.pulse_info['2']['half_pi_len'],
+                                        ramp_sigma_len=0.001, cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0)}
+
+        # self.qubit_pi = {
+        # "1": Gauss(max_amp=self.pulse_info['1']['pi_amp'], sigma_len=self.pulse_info['1']['pi_len'], cutoff_sigma=2,
+        #            freq=self.qubit_freq["1"], phase=0, plot=False),
+        # "2": Gauss(max_amp=self.pulse_info['2']['pi_amp'], sigma_len=self.pulse_info['2']['pi_len'], cutoff_sigma=2,
+        #            freq=self.qubit_freq["2"], phase=0, plot=False)}
+        #
+        # self.qubit_half_pi = {
+        # "1": Gauss(max_amp=self.pulse_info['1']['half_pi_amp'], sigma_len=self.pulse_info['1']['half_pi_len'],
+        #            cutoff_sigma=2, freq=self.qubit_freq["1"], phase=0, plot=False),
+        # "2": Gauss(max_amp=self.pulse_info['2']['half_pi_amp'], sigma_len=self.pulse_info['2']['half_pi_len'],
+        #            cutoff_sigma=2, freq=self.qubit_freq["2"], phase=0, plot=False)}
 
         self.qubit_ef_pi = {
         "1": Gauss(max_amp=self.pulse_info['1']['pi_ef_amp'], sigma_len=self.pulse_info['1']['pi_ef_len'], cutoff_sigma=2,
