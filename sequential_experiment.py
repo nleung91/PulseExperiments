@@ -9,7 +9,7 @@ from slab.dsfit import fitdecaysin
 
 from skopt import Optimizer
 
-from slab.experiments.PulseExperiments.get_data import get_singleshot_data_two_qubits_4_calibration,\
+from slab.experiments.PulseExperiments.get_data import get_singleshot_data_two_qubits_4_calibration_v2,\
     get_singleshot_data_two_qubits, data_to_correlators, two_qubit_quantum_state_tomography,\
     density_matrix_maximum_likelihood
 
@@ -881,7 +881,7 @@ def bell_entanglement_by_half_sideband_optimize_gp_v4(quantum_device_cfg, experi
             for expt_id in range(sequence_num):
                 elem_list = list(range(expt_id*17,(expt_id+1)*17)) + [-4,-3,-2,-1]
                 single_data_list = [single_data1[:,:,elem_list,:], single_data2[:,:,elem_list,:]]
-                state_norm = get_singleshot_data_two_qubits_4_calibration(single_data_list)
+                state_norm = get_singleshot_data_two_qubits_4_calibration_v2(single_data_list)
 
                 state_data = data_to_correlators(state_norm[:9])
                 den_mat_guess = two_qubit_quantum_state_tomography(state_data)

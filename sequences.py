@@ -1387,11 +1387,10 @@ class PulseSequences:
                     receiver_flux_pulse.A_list = kwargs['rece_A_list'][expt_id]
                 sequencer.append('flux%s'%receiver_id,receiver_flux_pulse)
 
-                sequencer.sync_channels_time(self.channels)
-
                 qubit_1_measure = qubit_measure[0]
                 qubit_2_measure = qubit_measure[1]
 
+                sequencer.sync_channels_time(['charge1', 'flux1'])
                 if qubit_1_measure == 'X':
                     m_pulse = copy.copy(self.qubit_half_pi['1'])
                     sequencer.append('charge%s' % '1', m_pulse)
@@ -1408,6 +1407,7 @@ class PulseSequences:
                     m_pulse.phase = -np.pi/2
                     sequencer.append('charge%s' % '1', m_pulse)
 
+                sequencer.sync_channels_time(['charge2', 'flux2'])
                 if qubit_2_measure == 'X':
                     m_pulse = copy.copy(self.qubit_half_pi['2'])
                     sequencer.append('charge%s' % '2', m_pulse)
