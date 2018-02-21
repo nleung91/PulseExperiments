@@ -1322,7 +1322,10 @@ def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path
     data_path = os.path.join(path, 'data/')
     seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'photon_transfer_sweep', suffix='.h5'))
 
-    sweep = 'sender_a'
+    sweep = 'rece_a'
+
+    sender_id = quantum_device_cfg['communication']['sender_id']
+    receiver_id = quantum_device_cfg['communication']['receiver_id']
 
     if sweep == 'delay':
         delay_len_start = -100
@@ -1338,12 +1341,24 @@ def photon_transfer_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path
             exp.run_experiment(sequences, path, 'photon_transfer', seq_data_file)
 
     elif sweep == 'sender_a':
-        start = 0.6
-        stop = 0.2
+        start = 0.41
+        stop = 0.39
+        step = -0.002
+
+        for amp in np.arange(start, stop,step):
+            quantum_device_cfg['communication'][sender_id]['pi_amp'] = amp
+            ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+            sequences = ps.get_experiment_sequences('photon_transfer')
+
+            exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+            exp.run_experiment(sequences, path, 'photon_transfer', seq_data_file)
+    elif sweep == 'rece_a':
+        start = 0.5
+        stop = 0.3
         step = -0.01
 
         for amp in np.arange(start, stop,step):
-            quantum_device_cfg['communication'][experiment_cfg['photon_transfer']['sender_id']]['pi_amp'] = amp
+            quantum_device_cfg['communication'][receiver_id]['pi_amp'] = amp
             ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
             sequences = ps.get_experiment_sequences('photon_transfer')
 
