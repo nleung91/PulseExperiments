@@ -1089,6 +1089,8 @@ class PulseSequences:
             for expt_id in range(kwargs['sequence_num']):
                 sequencer.new_sequence(self)
 
+                sender_id = self.quantum_device_cfg['communication']['sender_id']
+                receiver_id = self.quantum_device_cfg['communication']['receiver_id']
 
 
                 sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])

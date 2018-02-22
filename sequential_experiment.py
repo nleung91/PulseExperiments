@@ -657,12 +657,15 @@ def photon_transfer_optimize_gp_v4(quantum_device_cfg, experiment_cfg, hardware_
 
 
     max_a = {"1":0.6, "2":0.7}
+    max_len = 400
     # max_delta_freq = 0.0005
 
     sender_id = quantum_device_cfg['communication']['sender_id']
     receiver_id = quantum_device_cfg['communication']['receiver_id']
 
     limit_list = []
+    limit_list += [(0.10, max_a[sender_id])]
+    limit_list += [(0.1, max_a[receiver_id])]
     limit_list += [(100.0,max_len)]
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
@@ -697,6 +700,7 @@ def photon_transfer_optimize_gp_v4(quantum_device_cfg, experiment_cfg, hardware_
             gp_best = opt.ask()
             next_x_list.append(gp_best)
 
+            random_sample_num = 20
             x_from_model_num = sequence_num-random_sample_num-1
 
             X_cand = opt.space.transform(opt.space.rvs(n_samples=100000))
@@ -741,6 +745,8 @@ def photon_transfer_optimize_gp_v4(quantum_device_cfg, experiment_cfg, hardware_
         data_file = exp.run_experiment(sequences, path, 'photon_transfer_arb', seq_data_file)
 
         with SlabFile(data_file) as a:
+            single_data1 = np.array(a['single_data1'][-1])
+            single_data2 = np.array(a['single_data2'][-1])
             single_data_list = [single_data1, single_data2]
 
             state_norm = get_singleshot_data_two_qubits_4_calibration_v2(single_data_list)
