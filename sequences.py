@@ -693,6 +693,63 @@ class PulseSequences:
 
         return sequencer.complete(self, plot=True)
 
+    def photon_transfer_delay(self, sequencer, **kwargs):
+        # mm rabi sequences
+
+        for delay in np.arange(self.expt_cfg['start'], self.expt_cfg['stop'], self.expt_cfg['step']):
+            rabi_len = 400
+            sequencer.new_sequence(self)
+
+            sender_id = self.communication['sender_id']
+            receiver_id = self.communication['receiver_id']
+
+            sequencer.append('charge%s' % sender_id, self.qubit_pi[sender_id])
+            sequencer.sync_channels_time(['charge%s' % sender_id, 'flux%s' % sender_id, 'flux%s' % receiver_id])
+
+            # if "freq_a" in self.expt_cfg["use_fit"]:
+            #
+            #     with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_100kHz.pkl'%sender_id), 'rb') as f:
+            #         freq_a_p_send = pickle.load(f)
+            #
+            #     freq_send = freq_a_p_send(self.communication[sender_id]['pi_amp'])
+            #
+            #     with open(os.path.join(self.quantum_device_cfg['fit_path'],'comm_sideband/%s_100kHz.pkl'%receiver_id), 'rb') as f:
+            #         freq_a_p_rece = pickle.load(f)
+            #
+            #     freq_rece = freq_a_p_rece(self.communication[receiver_id]['pi_amp'])
+            # else:
+            #     freq_send = self.communication[sender_id]['freq']
+            #     freq_rece = self.communication[receiver_id]['freq']
+
+            if delay < 0:
+                sequencer.append('flux%s'%sender_id,
+                                 Idle(time=abs(delay)))
+
+            flux_pulse = self.communication_flux_pi[sender_id]
+            flux_pulse.len = rabi_len
+            # flux_pulse.delta_freq = 0.001
+            if 'send_A_list' in kwargs:
+                flux_pulse.A_list = kwargs['send_A_list']
+            sequencer.append('flux%s'%sender_id,flux_pulse)
+
+            if delay > 0:
+                sequencer.append('flux%s'%receiver_id,
+                                 Idle(time=delay))
+
+            flux_pulse = self.communication_flux_pi[receiver_id]
+            flux_pulse.len = rabi_len
+            # flux_pulse.plot = True
+            if 'rece_A_list' in kwargs:
+                flux_pulse.A_list = kwargs['rece_A_list']
+            sequencer.append('flux%s'%receiver_id,flux_pulse)
+
+
+            self.readout(sequencer, self.expt_cfg.get('on_qubits',["1","2"]))
+
+            sequencer.end_sequence()
+
+        return sequencer.complete(self, plot=True)
+
 
     def heralding_only_ge_test(self, sequencer, **kwargs):
         # mm rabi sequences
