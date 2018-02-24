@@ -652,7 +652,7 @@ def photon_transfer_optimize_gp_v4(quantum_device_cfg, experiment_cfg, hardware_
 
     iteration_num = 20000
 
-    sequence_num = 100
+    sequence_num = 50
     expt_num = sequence_num
 
 
@@ -700,7 +700,7 @@ def photon_transfer_optimize_gp_v4(quantum_device_cfg, experiment_cfg, hardware_
             gp_best = opt.ask()
             next_x_list.append(gp_best)
 
-            random_sample_num = 20
+            random_sample_num = 10
             x_from_model_num = sequence_num-random_sample_num-1
 
             X_cand = opt.space.transform(opt.space.rvs(n_samples=100000))
