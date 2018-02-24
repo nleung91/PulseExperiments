@@ -656,7 +656,7 @@ def photon_transfer_optimize_gp_v4(quantum_device_cfg, experiment_cfg, hardware_
     expt_num = sequence_num
 
 
-    max_a = {"1":0.6, "2":0.7}
+    max_a = {"1":0.3, "2":0.7}
     max_len = 400
     # max_delta_freq = 0.0005
 
@@ -750,7 +750,10 @@ def photon_transfer_optimize_gp_v4(quantum_device_cfg, experiment_cfg, hardware_
             single_data_list = [single_data1, single_data2]
 
             state_norm = get_singleshot_data_two_qubits_4_calibration_v2(single_data_list)
-            f_val_list = list(1-state_norm[1])
+            if receiver_id == 2:
+                f_val_list = list(1-state_norm[1])
+            else:
+                f_val_list = list(1-state_norm[2])
             print(f_val_list)
 
         opt.tell(next_x_list, f_val_list)
@@ -1566,7 +1569,7 @@ def bell_repeat(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     data_path = os.path.join(path, 'data/')
     #seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'bell_entanglement_by_half_sideband_tomography_repeat', suffix='.h5'))
 
-    repeat = 100
+    repeat = 10
 
     update_awg = True
 

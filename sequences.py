@@ -1450,7 +1450,7 @@ class PulseSequences:
                 qubit_1_measure = qubit_measure[0]
                 qubit_2_measure = qubit_measure[1]
 
-                measurement_phase = -1.82712+0.0580-0.3383 + 0.04741-0.026 - 0.2054 + 0.12731 + 0.0087
+                measurement_phase = -1.82712+0.0580-0.3383 + 0.04741-0.026 - 0.2054 + 0.12731 + 0.0087 - 0.87632224
 
                 sequencer.sync_channels_time(['charge1', 'flux1'])
                 if qubit_1_measure == 'X':
