@@ -896,18 +896,19 @@ def bell_entanglement_by_half_sideband_optimize_gp_v4(quantum_device_cfg, experi
     expt_num = sequence_num
 
 
-    max_a = {"1":0.6, "2":0.7}
-    max_len = 200
+    max_a = {"1":0.4, "2":0.6}
+    max_len_send = 80
+    max_len_rece = 200
     # max_delta_freq = 0.0005
 
     sender_id = quantum_device_cfg['communication']['sender_id']
     receiver_id = quantum_device_cfg['communication']['receiver_id']
 
     limit_list = []
-    limit_list += [(0.30, max_a[sender_id])]
-    limit_list += [(0.3, max_a[receiver_id])]
-    limit_list += [(10.0,max_len*max_a[sender_id])]
-    limit_list += [(10.0,max_len*max_a[receiver_id])]
+    limit_list += [(0.35, max_a[sender_id])]
+    limit_list += [(0.55, max_a[receiver_id])]
+    limit_list += [(60.0*0.35,max_len_send*max_a[sender_id])]
+    limit_list += [(170.0*0.55,max_len_rece*max_a[receiver_id])]
     # limit_list += [(-max_delta_freq,max_delta_freq)] * 2
 
     ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
