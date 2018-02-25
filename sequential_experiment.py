@@ -136,7 +136,16 @@ def sideband_rabi_around_mm(quantum_device_cfg, experiment_cfg, hardware_cfg, pa
 
     freq_array_2 = np.hstack(np.array(freq_list_all_2))
 
+    last_freq_1 = 0
+
     for freq_1, freq_2 in zip(freq_array_1,freq_array_2):
+
+        # calibrate qubit frequency everytime changing target mm
+        if freq_1 - last_freq_1 > 2*expt_cfg['step']:
+            qubit_frequency_flux_calibration(quantum_device_cfg, experiment_cfg, hardware_cfg, path)
+
+        last_freq_1 = freq_1
+
         experiment_cfg['sideband_rabi_2_freq']['freq_1'] = freq_1
         experiment_cfg['sideband_rabi_2_freq']['freq_2'] = freq_2
         experiment_cfg['sideband_rabi_2_freq']['amp'] = expt_cfg['amp']
