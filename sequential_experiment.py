@@ -115,6 +115,46 @@ def sideband_rabi_sweep(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
         update_awg = False
 
 
+def sideband_rabi_around_mm(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
+    expt_cfg = experiment_cfg['sideband_rabi_around_mm']
+    data_path = os.path.join(path, 'data/')
+    seq_data_file = os.path.join(data_path, get_next_filename(data_path, 'sideband_rabi_around_mm', suffix='.h5'))
+    on_qubits = expt_cfg['on_qubits']
+
+    mm_freq_list_1 = quantum_device_cfg['multimodes']['1']['freq']
+    freq_list_all_1 = []
+    for mm_freq in mm_freq_list_1:
+        freq_list_all_1 += [np.arange(mm_freq-expt_cfg['freq_range'],mm_freq+expt_cfg['freq_range'],expt_cfg['step'])]
+
+    freq_array_1 = np.hstack(np.array(freq_list_all_1))
+
+
+    mm_freq_list_2 = quantum_device_cfg['multimodes']['2']['freq']
+    freq_list_all_2 = []
+    for mm_freq in mm_freq_list_2:
+        freq_list_all_2 += [np.arange(mm_freq-expt_cfg['freq_range'],mm_freq+expt_cfg['freq_range'],expt_cfg['step'])]
+
+    freq_array_2 = np.hstack(np.array(freq_list_all_2))
+
+    for freq_1, freq_2 in zip(freq_array_1,freq_array_2):
+        experiment_cfg['sideband_rabi_2_freq']['freq_1'] = freq_1
+        experiment_cfg['sideband_rabi_2_freq']['freq_2'] = freq_2
+        experiment_cfg['sideband_rabi_2_freq']['amp'] = expt_cfg['amp']
+        experiment_cfg['sideband_rabi_2_freq']['start'] = expt_cfg['time_start']
+        experiment_cfg['sideband_rabi_2_freq']['stop'] = expt_cfg['time_stop']
+        experiment_cfg['sideband_rabi_2_freq']['step'] = expt_cfg['time_step']
+        experiment_cfg['sideband_rabi_2_freq']['acquisition_num'] = expt_cfg['acquisition_num']
+        experiment_cfg['sideband_rabi_2_freq']['on_qubits'] = expt_cfg['on_qubits']
+        experiment_cfg['sideband_rabi_2_freq']['pi_calibration'] = expt_cfg['pi_calibration']
+        ps = PulseSequences(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        sequences = ps.get_experiment_sequences('sideband_rabi_2_freq')
+        update_awg = True
+
+        exp = Experiment(quantum_device_cfg, experiment_cfg, hardware_cfg)
+        exp.run_experiment(sequences, path, 'sideband_rabi_around_mm', seq_data_file, update_awg)
+
+        update_awg = False
+
 
 def multimode_rabi_pi_calibrate(quantum_device_cfg, experiment_cfg, hardware_cfg, path):
     expt_cfg = experiment_cfg['multimode_rabi']
